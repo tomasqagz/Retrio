@@ -1,35 +1,54 @@
-import React from 'react'
+import { useState, useEffect } from 'react'
+import type React from 'react'
 import { useNavigate } from 'react-router-dom'
 import GameCard from '../components/GameCard'
+import GameDetail from '../components/GameDetail'
 import type { Game, Platform } from '../../shared/types'
 import './Home.css'
 
-const FEATURED_GAMES: Game[] = [
-  { id: 1, title: 'Super Mario World', platform: 'SNES', year: 1990, coverUrl: null, coverUrlHd: null, summary: null, rating: null, downloaded: false, downloading: false },
-  { id: 2, title: 'Sonic the Hedgehog 2', platform: 'Sega Genesis', year: 1992, coverUrl: null, coverUrlHd: null, summary: null, rating: null, downloaded: false, downloading: false },
-  { id: 3, title: 'Ocarina of Time', platform: 'N64', year: 1998, coverUrl: null, coverUrlHd: null, summary: null, rating: null, downloaded: false, downloading: false },
-  { id: 4, title: 'Final Fantasy VII', platform: 'PS1', year: 1997, coverUrl: null, coverUrlHd: null, summary: null, rating: null, downloaded: false, downloading: false },
-  { id: 5, title: 'Donkey Kong Country', platform: 'SNES', year: 1994, coverUrl: null, coverUrlHd: null, summary: null, rating: null, downloaded: false, downloading: false },
-  { id: 6, title: 'Crash Bandicoot', platform: 'PS1', year: 1996, coverUrl: null, coverUrlHd: null, summary: null, rating: null, downloaded: false, downloading: false },
-]
-
-interface PlatformChip {
+interface PlatformEntry {
   name: Platform
   color: string
-  games: number
 }
 
-const PLATFORMS: PlatformChip[] = [
-  { name: 'NES', color: '#e53e3e', games: 500 },
-  { name: 'SNES', color: '#7b2d8b', games: 720 },
-  { name: 'Sega Genesis', color: '#1a56db', games: 900 },
-  { name: 'PS1', color: '#00439c', games: 2400 },
-  { name: 'PS2', color: '#00439c', games: 3800 },
-  { name: 'N64', color: '#008a00', games: 280 },
+const PLATFORMS: PlatformEntry[] = [
+  { name: 'NES', color: '#e53e3e' },
+  { name: 'SNES', color: '#7b2d8b' },
+  { name: 'Sega Genesis', color: '#1a56db' },
+  { name: 'PS1', color: '#00439c' },
+  { name: 'PS2', color: '#00439c' },
+  { name: 'N64', color: '#008a00' },
 ]
+
+const IS_ELECTRON = Boolean(window.retrio)
+
+async function fetchPopular(): Promise<Game[]> {
+  if (IS_ELECTRON) return window.retrio.getPopularGames(null)
+  const res = await fetch('/api/igdb/popular')
+  if (!res.ok) return []
+  return res.json() as Promise<Game[]>
+}
 
 export default function Home() {
   const navigate = useNavigate()
+  const [popular, setPopular] = useState<Game[]>([])
+  const [library, setLibrary] = useState<Game[]>([])
+  const [loadingPopular, setLoadingPopular] = useState(true)
+  const [selectedGame, setSelectedGame] = useState<Game | null>(null)
+
+  useEffect(() => {
+    fetchPopular()
+      .then(setPopular)
+      .finally(() => setLoadingPopular(false))
+
+    if (IS_ELECTRON) {
+      void window.retrio.getLibrary().then((games) =>
+        setLibrary(games.slice(0, 6))
+      )
+    }
+  }, [])
+
+  const recentLibrary = library.filter((g) => g.downloaded || g.downloading)
 
   return (
     <div className="page home-page">
@@ -39,9 +58,16 @@ export default function Home() {
           <p className="home-hero-subtitle">
             Busca, descarga y juega en segundos. Sin configurar nada.
           </p>
-          <button className="btn-primary" onClick={() => navigate('/search')}>
-            Buscar juegos
-          </button>
+          <div className="home-hero-actions">
+            <button className="btn-primary" onClick={() => navigate('/search')}>
+              Buscar juegos
+            </button>
+            {recentLibrary.length > 0 && (
+              <button className="btn-secondary" onClick={() => navigate('/library')}>
+                Mi biblioteca · {library.length}
+              </button>
+            )}
+          </div>
         </div>
         <div className="home-hero-decoration" aria-hidden="true">
           <div className="pixel-grid" />
@@ -62,25 +88,62 @@ export default function Home() {
             >
               <span className="platform-chip-dot" />
               <span className="platform-chip-name">{p.name}</span>
-              <span className="platform-chip-count">{p.games.toLocaleString()} juegos</span>
             </button>
           ))}
         </div>
       </section>
 
+      {recentLibrary.length > 0 && (
+        <section className="home-section">
+          <div className="section-header">
+            <h2 className="section-title">Últimos añadidos</h2>
+            <button className="section-link" onClick={() => navigate('/library')}>
+              Ver biblioteca
+            </button>
+          </div>
+          <div className="games-grid">
+            {recentLibrary.map((game) => (
+              <GameCard
+                key={game.id}
+                game={game}
+                onClick={() => setSelectedGame(game)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="home-section">
         <div className="section-header">
-          <h2 className="section-title">Juegos populares</h2>
+          <h2 className="section-title">Populares</h2>
           <button className="section-link" onClick={() => navigate('/search')}>
             Ver todos
           </button>
         </div>
-        <div className="games-grid">
-          {FEATURED_GAMES.map((game) => (
-            <GameCard key={game.id} game={game} />
-          ))}
-        </div>
+        {loadingPopular ? (
+          <div className="home-loading">
+            <div className="spinner" />
+          </div>
+        ) : (
+          <div className="games-grid">
+            {popular.slice(0, 12).map((game) => (
+              <GameCard
+                key={game.id}
+                game={game}
+                onClick={() => setSelectedGame(game)}
+                onDownload={() => setSelectedGame(game)}
+              />
+            ))}
+          </div>
+        )}
       </section>
+
+      {selectedGame && (
+        <GameDetail
+          game={selectedGame}
+          onClose={() => setSelectedGame(null)}
+        />
+      )}
     </div>
   )
 }
