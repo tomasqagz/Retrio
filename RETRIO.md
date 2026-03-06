@@ -16,13 +16,23 @@ Launcher de juegos retro estilo Stremio. El usuario busca un juego, lo descarga 
 
 ## Stack Tecnológico
 
-| Tecnología | Rol |
-|---|---|
-| **Electron** | Convierte la app web en app de escritorio instalable (Win/Mac/Linux) |
-| **React** | UI del launcher |
-| **WebTorrent** | Cliente torrent nativo en Node.js, integrado sin programas externos |
-| **SQLite** | Base de datos local para la biblioteca de juegos del usuario |
-| **IGDB API** | Metadata automática: portadas, descripciones, géneros, año |
+| Tecnología | Versión | Rol |
+|---|---|---|
+| **Electron** | v40 | Convierte la app web en app de escritorio instalable (Win/Mac/Linux) |
+| **React** | v19 | UI del launcher |
+| **TypeScript** | v5 | Tipado estático en todo el proyecto (main + renderer) |
+| **Vite** | v7 | Bundler para el renderer — hot reload en desarrollo |
+| **tsx** | v4 | Ejecuta TypeScript en el main process de Electron sin compilación previa |
+| **WebTorrent** | — | Cliente torrent nativo en Node.js, integrado sin programas externos |
+| **SQLite (better-sqlite3)** | — | Base de datos local para la biblioteca de juegos del usuario |
+| **IGDB API** | v4 | Metadata automática: portadas, descripciones, géneros, año |
+| **dotenv** | — | Variables de entorno para credenciales de IGDB |
+
+### Convenciones de código
+- Todo el código en **TypeScript estricto** (`"strict": true`)
+- Main process: `.ts` con módulos CommonJS
+- Renderer: `.tsx` con módulos ESM (manejado por Vite)
+- Tipos compartidos en `src/shared/types.ts`
 
 ---
 
@@ -79,11 +89,11 @@ Launcher de juegos retro estilo Stremio. El usuario busca un juego, lo descarga 
 ## Features del Launcher
 
 ### Esenciales (MVP)
-- [ ] Búsqueda de juegos con metadata automática (portadas, descripción)
+- [x] Búsqueda de juegos con metadata automática (portadas, descripción) — **IGDB API**
 - [ ] Descarga via torrent con WebTorrent
 - [ ] Detección automática de consola por extensión de archivo
 - [ ] Instalación automática de emuladores (primera vez)
-- [ ] Biblioteca personal de juegos descargados
+- [ ] Biblioteca personal de juegos descargados — **SQLite**
 - [ ] Lanzar juego con un click
 
 ### Segunda iteración
@@ -100,33 +110,42 @@ Launcher de juegos retro estilo Stremio. El usuario busca un juego, lo descarga 
 
 ---
 
-## Estructura de Carpetas Sugerida
+## Estructura de Carpetas
 
 ```
 retrio/
-├── public/
 ├── src/
-│   ├── main/                  # Proceso principal de Electron
-│   │   ├── index.js           # Entry point Electron
-│   │   ├── torrent.js         # Lógica WebTorrent
-│   │   ├── emulators.js       # Gestión e instalación de emuladores
-│   │   └── database.js        # SQLite - biblioteca de juegos
-│   ├── renderer/              # React (la UI)
-│   │   ├── App.jsx
+│   ├── main/                  # Proceso principal de Electron (TypeScript)
+│   │   ├── index.ts           # Entry point Electron
+│   │   ├── igdb.ts            # Servicio IGDB (búsqueda + metadata)
+│   │   ├── torrent.ts         # Lógica WebTorrent (próximamente)
+│   │   ├── emulators.ts       # Gestión e instalación de emuladores (próximamente)
+│   │   └── preload.ts         # Bridge seguro renderer ↔ main
+│   ├── renderer/              # React + TypeScript (la UI)
+│   │   ├── index.html
+│   │   ├── main.tsx
+│   │   ├── App.tsx
 │   │   ├── pages/
-│   │   │   ├── Home.jsx       # Pantalla principal / destacados
-│   │   │   ├── Search.jsx     # Búsqueda de juegos
-│   │   │   ├── Library.jsx    # Juegos descargados
-│   │   │   └── Settings.jsx   # Configuración y emuladores
-│   │   └── components/
-│   │       ├── GameCard.jsx
-│   │       ├── DownloadBar.jsx
-│   │       └── ControlMapper.jsx
-│   └── shared/                # Código compartido main/renderer
+│   │   │   ├── Home.tsx
+│   │   │   ├── Search.tsx
+│   │   │   ├── Library.tsx
+│   │   │   └── Settings.tsx
+│   │   ├── components/
+│   │   │   ├── GameCard.tsx
+│   │   │   ├── GameDetail.tsx
+│   │   │   ├── Sidebar.tsx
+│   │   │   └── DownloadBar.tsx  (próximamente)
+│   │   └── styles/
+│   └── shared/                # Tipos compartidos main/renderer
+│       └── types.ts           # Interfaces: Game, Platform, RetrioAPI, etc.
 ├── emulators/                 # Emuladores portables (se descargan automáticamente)
 ├── roms/                      # ROMs descargadas por el usuario
-├── package.json
-└── electron-builder.json      # Config para generar instalador
+├── tsconfig.json              # Config TypeScript para el renderer
+├── tsconfig.node.json         # Config TypeScript para el main process
+├── vite.config.ts             # Config Vite (incluye plugin dev para IGDB)
+├── electron-builder.json      # Config para generar instalador
+├── .env                       # Credenciales IGDB (no versionado)
+└── package.json
 ```
 
 ---
@@ -134,21 +153,26 @@ retrio/
 ## Cómo Arrancar el Proyecto
 
 ```bash
-# 1. Instalar Node.js desde nodejs.org
+# 1. Clonar el repo
+git clone https://github.com/tomasqagz/Retrio
+cd Retrio
 
-# 2. Crear el proyecto
-mkdir retrio
-cd retrio
-npm init -y
+# 2. Instalar dependencias
+npm install
 
-# 3. Instalar dependencias principales
-npm install electron react react-dom webtorrent better-sqlite3
+# 3. Configurar credenciales IGDB en .env
+#    (obtener en dev.twitch.tv/console)
+IGDB_CLIENT_ID=tu_client_id
+IGDB_CLIENT_SECRET=tu_client_secret
 
-# 4. Instalar dependencias de desarrollo
-npm install --save-dev @electron-forge/cli vite @vitejs/plugin-react electron-builder
-
-# 5. Correr en desarrollo
+# 4. Correr en desarrollo (solo UI en el browser)
 npm run dev
+
+# 5. Correr con Electron completo
+npm run dev:electron
+
+# 6. Verificar tipos
+npm run typecheck
 ```
 
 ---
@@ -157,10 +181,9 @@ npm run dev
 
 | Etapa | Dónde se prueba |
 |---|---|
-| UI / diseño visual | Navegador (Chrome) — sin instalar nada |
-| App completa con torrents y emuladores | Electron — requiere Node.js instalado |
-
-**Estrategia:** primero construir y aprobar toda la UI en el navegador, luego conectar la lógica real con Electron.
+| UI / diseño visual | Navegador (Chrome) — `npm run dev` |
+| IGDB / metadata / portadas | Navegador — el plugin de Vite proxea las llamadas |
+| App completa con torrents y emuladores | Electron — `npm run dev:electron` |
 
 ---
 

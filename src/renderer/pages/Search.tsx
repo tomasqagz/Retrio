@@ -1,54 +1,55 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import GameCard from '../components/GameCard.jsx'
-import GameDetail from '../components/GameDetail.jsx'
+import GameCard from '../components/GameCard'
+import GameDetail from '../components/GameDetail'
+import type { Game, Platform } from '../../shared/types'
 import './Search.css'
 
-const PLATFORMS = ['Todas', 'NES', 'SNES', 'Sega Genesis', 'PS1', 'PS2', 'N64']
+const PLATFORMS: Array<Platform | 'Todas'> = ['Todas', 'NES', 'SNES', 'Sega Genesis', 'PS1', 'PS2', 'N64']
 
 const IS_ELECTRON = Boolean(window.retrio)
 
-async function apiFetch(path) {
+async function apiFetch<T>(path: string): Promise<T> {
   const res = await fetch(`/api/igdb${path}`)
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }))
+    const err = await res.json().catch(() => ({ error: res.statusText })) as { error: string }
     throw new Error(err.error || res.statusText)
   }
-  return res.json()
+  return res.json() as Promise<T>
 }
 
-async function fetchGames(query, platform) {
+async function fetchGames(query: string, platform: Platform | 'Todas'): Promise<Game[]> {
   if (IS_ELECTRON) {
     return window.retrio.searchGames(query, platform === 'Todas' ? null : platform)
   }
   const params = new URLSearchParams()
   if (query) params.set('q', query)
-  if (platform && platform !== 'Todas') params.set('platform', platform)
-  return apiFetch(`/search?${params}`)
+  if (platform !== 'Todas') params.set('platform', platform)
+  return apiFetch<Game[]>(`/search?${params}`)
 }
 
-async function fetchPopular(platform) {
+async function fetchPopular(platform: Platform | 'Todas'): Promise<Game[]> {
   if (IS_ELECTRON) {
     return window.retrio.getPopularGames(platform === 'Todas' ? null : platform)
   }
   const params = new URLSearchParams()
-  if (platform && platform !== 'Todas') params.set('platform', platform)
-  return apiFetch(`/popular?${params}`)
+  if (platform !== 'Todas') params.set('platform', platform)
+  return apiFetch<Game[]>(`/popular?${params}`)
 }
 
 export default function Search() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [query, setQuery] = useState(searchParams.get('q') || '')
-  const [activePlatform, setActivePlatform] = useState(
-    searchParams.get('platform') || 'Todas'
+  const [query, setQuery] = useState(searchParams.get('q') ?? '')
+  const [activePlatform, setActivePlatform] = useState<Platform | 'Todas'>(
+    (searchParams.get('platform') as Platform) ?? 'Todas'
   )
-  const [results, setResults] = useState([])
+  const [results, setResults] = useState<Game[]>([])
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [selectedGame, setSelectedGame] = useState(null)
-  const debounceRef = useRef(null)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedGame, setSelectedGame] = useState<Game | null>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const runSearch = useCallback(async (q, platform) => {
+  const runSearch = useCallback(async (q: string, platform: Platform | 'Todas') => {
     setError(null)
     setLoading(true)
     try {
@@ -57,7 +58,7 @@ export default function Search() {
         : await fetchPopular(platform)
       setResults(data)
     } catch (err) {
-      setError(err.message)
+      setError(err instanceof Error ? err.message : 'Error desconocido')
       setResults([])
     } finally {
       setLoading(false)
@@ -68,17 +69,17 @@ export default function Search() {
     runSearch(query, activePlatform)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  function handleQueryChange(e) {
+  function handleQueryChange(e: React.ChangeEvent<HTMLInputElement>) {
     const val = e.target.value
     setQuery(val)
     setSearchParams(val ? { q: val } : {})
-    clearTimeout(debounceRef.current)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => runSearch(val, activePlatform), 400)
   }
 
-  function handlePlatformChange(platform) {
+  function handlePlatformChange(platform: Platform | 'Todas') {
     setActivePlatform(platform)
-    clearTimeout(debounceRef.current)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
     runSearch(query, platform)
   }
 

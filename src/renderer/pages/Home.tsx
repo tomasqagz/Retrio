@@ -1,18 +1,25 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import GameCard from '../components/GameCard.jsx'
+import GameCard from '../components/GameCard'
+import type { Game, Platform } from '../../shared/types'
 import './Home.css'
 
-const FEATURED_GAMES = [
-  { id: 1, title: 'Super Mario World', platform: 'SNES', year: 1990, coverUrl: null, downloaded: false },
-  { id: 2, title: 'Sonic the Hedgehog 2', platform: 'Sega Genesis', year: 1992, coverUrl: null, downloaded: false },
-  { id: 3, title: 'The Legend of Zelda: Ocarina of Time', platform: 'N64', year: 1998, coverUrl: null, downloaded: false },
-  { id: 4, title: 'Final Fantasy VII', platform: 'PS1', year: 1997, coverUrl: null, downloaded: false },
-  { id: 5, title: 'Donkey Kong Country', platform: 'SNES', year: 1994, coverUrl: null, downloaded: false },
-  { id: 6, title: 'Crash Bandicoot', platform: 'PS1', year: 1996, coverUrl: null, downloaded: false },
+const FEATURED_GAMES: Game[] = [
+  { id: 1, title: 'Super Mario World', platform: 'SNES', year: 1990, coverUrl: null, coverUrlHd: null, summary: null, rating: null, downloaded: false, downloading: false },
+  { id: 2, title: 'Sonic the Hedgehog 2', platform: 'Sega Genesis', year: 1992, coverUrl: null, coverUrlHd: null, summary: null, rating: null, downloaded: false, downloading: false },
+  { id: 3, title: 'Ocarina of Time', platform: 'N64', year: 1998, coverUrl: null, coverUrlHd: null, summary: null, rating: null, downloaded: false, downloading: false },
+  { id: 4, title: 'Final Fantasy VII', platform: 'PS1', year: 1997, coverUrl: null, coverUrlHd: null, summary: null, rating: null, downloaded: false, downloading: false },
+  { id: 5, title: 'Donkey Kong Country', platform: 'SNES', year: 1994, coverUrl: null, coverUrlHd: null, summary: null, rating: null, downloaded: false, downloading: false },
+  { id: 6, title: 'Crash Bandicoot', platform: 'PS1', year: 1996, coverUrl: null, coverUrlHd: null, summary: null, rating: null, downloaded: false, downloading: false },
 ]
 
-const PLATFORMS = [
+interface PlatformChip {
+  name: Platform
+  color: string
+  games: number
+}
+
+const PLATFORMS: PlatformChip[] = [
   { name: 'NES', color: '#e53e3e', games: 500 },
   { name: 'SNES', color: '#7b2d8b', games: 720 },
   { name: 'Sega Genesis', color: '#1a56db', games: 900 },
@@ -50,7 +57,7 @@ export default function Home() {
             <button
               key={p.name}
               className="platform-chip"
-              style={{ '--platform-color': p.color }}
+              style={{ '--platform-color': p.color } as React.CSSProperties}
               onClick={() => navigate(`/search?platform=${encodeURIComponent(p.name)}`)}
             >
               <span className="platform-chip-dot" />

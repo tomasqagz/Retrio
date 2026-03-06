@@ -1,25 +1,26 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
+import type { Emulator } from '../../shared/types'
 import './Settings.css'
 
-const EMULATORS = [
+const INITIAL_EMULATORS: Emulator[] = [
   { id: 'retroarch', name: 'RetroArch', platforms: ['NES', 'SNES', 'Sega Genesis', 'N64'], status: 'installed', version: '1.19.1' },
   { id: 'duckstation', name: 'DuckStation', platforms: ['PS1'], status: 'not_installed', version: null },
   { id: 'pcsx2', name: 'PCSX2', platforms: ['PS2'], status: 'not_installed', version: null },
 ]
 
 export default function Settings() {
-  const [emulators, setEmulators] = useState(EMULATORS)
+  const [emulators, setEmulators] = useState<Emulator[]>(INITIAL_EMULATORS)
   const [romsPath, setRomsPath] = useState('~/Retrio/roms')
   const [emulatorsPath, setEmulatorsPath] = useState('~/Retrio/emulators')
 
-  function handleInstall(id) {
+  function handleInstall(id: string) {
     setEmulators((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, status: 'installing' } : e))
+      prev.map((e) => (e.id === id ? { ...e, status: 'installing' as const } : e))
     )
     setTimeout(() => {
       setEmulators((prev) =>
         prev.map((e) =>
-          e.id === id ? { ...e, status: 'installed', version: '1.0.0' } : e
+          e.id === id ? { ...e, status: 'installed' as const, version: '1.0.0' } : e
         )
       )
     }, 2000)
@@ -39,9 +40,7 @@ export default function Settings() {
             <div key={emu.id} className="emulator-row">
               <div className="emulator-info">
                 <div className="emulator-name">{emu.name}</div>
-                <div className="emulator-platforms">
-                  {emu.platforms.join(', ')}
-                </div>
+                <div className="emulator-platforms">{emu.platforms.join(', ')}</div>
               </div>
               <div className="emulator-status">
                 {emu.status === 'installed' && (
@@ -54,10 +53,7 @@ export default function Settings() {
                   <span className="status-badge status-badge--loading">Instalando...</span>
                 )}
                 {emu.status === 'not_installed' && (
-                  <button
-                    className="btn-install"
-                    onClick={() => handleInstall(emu.id)}
-                  >
+                  <button className="btn-install" onClick={() => handleInstall(emu.id)}>
                     Instalar
                   </button>
                 )}
@@ -104,7 +100,7 @@ export default function Settings() {
           </div>
           <div className="about-row">
             <span className="about-label">Motor</span>
-            <span className="about-value">Electron + React</span>
+            <span className="about-value">Electron + React + TypeScript</span>
           </div>
           <div className="about-row">
             <span className="about-label">Torrents</span>

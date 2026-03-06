@@ -1,12 +1,11 @@
-require('dotenv').config()
+import 'dotenv/config'
+import { app, BrowserWindow, shell, ipcMain } from 'electron'
+import path from 'path'
+import { searchGames, getPopularGames, getGameById } from './igdb'
 
-const { app, BrowserWindow, shell, ipcMain } = require('electron')
-const path = require('path')
-const { searchGames, getPopularGames, getGameById } = require('./igdb')
+const isDev = !app.isPackaged
 
-const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
-
-function createWindow() {
+function createWindow(): void {
   const win = new BrowserWindow({
     width: 1280,
     height: 800,
@@ -36,15 +35,15 @@ function createWindow() {
 
 // ── IPC Handlers ──────────────────────────────────────────────────────────────
 
-ipcMain.handle('igdb:search', async (_e, { query, platform }) => {
+ipcMain.handle('igdb:search', async (_e, { query, platform }: { query: string; platform: string | null }) => {
   return searchGames(query, platform)
 })
 
-ipcMain.handle('igdb:popular', async (_e, { platform } = {}) => {
-  return getPopularGames(platform)
+ipcMain.handle('igdb:popular', async (_e, { platform }: { platform?: string | null } = {}) => {
+  return getPopularGames(platform ?? null)
 })
 
-ipcMain.handle('igdb:game', async (_e, { id }) => {
+ipcMain.handle('igdb:game', async (_e, { id }: { id: number }) => {
   return getGameById(id)
 })
 

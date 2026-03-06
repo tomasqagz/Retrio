@@ -1,7 +1,8 @@
 import React from 'react'
+import type { Game, Platform } from '../../shared/types'
 import './GameCard.css'
 
-const PLATFORM_COLORS = {
+const PLATFORM_COLORS: Record<Platform, string> = {
   NES: '#e53e3e',
   SNES: '#7b2d8b',
   'Sega Genesis': '#1a56db',
@@ -9,13 +10,21 @@ const PLATFORM_COLORS = {
   PS2: '#00439c',
   N64: '#008a00',
   PC: '#666',
+  Desconocida: '#444',
 }
 
-export default function GameCard({ game, onClick, onPlay, onDownload }) {
-  const { title, platform, coverUrl, year, rating, downloaded, downloading, progress } = game
-  const platformColor = PLATFORM_COLORS[platform] || '#555'
+interface GameCardProps {
+  game: Game
+  onClick?: (game: Game) => void
+  onPlay?: (game: Game) => void
+  onDownload?: (game: Game) => void
+}
 
-  function handleActionClick(e, fn) {
+export default function GameCard({ game, onClick, onPlay, onDownload }: GameCardProps) {
+  const { title, platform, coverUrl, year, rating, downloaded, downloading, progress } = game
+  const platformColor = PLATFORM_COLORS[platform] ?? '#555'
+
+  function handleActionClick(e: React.MouseEvent, fn?: (game: Game) => void) {
     e.stopPropagation()
     fn?.(game)
   }
@@ -35,7 +44,7 @@ export default function GameCard({ game, onClick, onPlay, onDownload }) {
           {platform}
         </div>
 
-        {rating && (
+        {rating != null && (
           <div className="game-card-rating">★ {rating}</div>
         )}
 
@@ -62,13 +71,13 @@ export default function GameCard({ game, onClick, onPlay, onDownload }) {
 
       {downloading && (
         <div className="game-card-progress">
-          <div className="game-card-progress-bar" style={{ width: `${progress || 0}%` }} />
+          <div className="game-card-progress-bar" style={{ width: `${progress ?? 0}%` }} />
         </div>
       )}
 
       <div className="game-card-info">
         <div className="game-card-title" title={title}>{title}</div>
-        {year && <div className="game-card-year">{year}</div>}
+        {year != null && <div className="game-card-year">{year}</div>}
       </div>
     </div>
   )

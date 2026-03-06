@@ -2,13 +2,14 @@
   "name": "retrio",
   "version": "1.0.0",
   "description": "Launcher de juegos retro estilo Stremio",
-  "main": "src/main/index.js",
+  "main": "src/main/index.ts",
   "scripts": {
-    "dev": "vite src/renderer --config vite.config.js",
-    "electron": "electron .",
+    "dev": "vite --config vite.config.ts",
+    "electron": "electron --require tsx/cjs .",
     "dev:electron": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && npm run electron\"",
-    "build": "vite build src/renderer --config vite.config.js",
-    "dist": "npm run build && electron-builder"
+    "build": "tsc -p tsconfig.node.json && vite build --config vite.config.ts",
+    "dist": "npm run build && electron-builder",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.node.json --noEmit"
   },
   "keywords": [],
   "author": "",
@@ -20,10 +21,15 @@
     "react-router-dom": "^7.13.1"
   },
   "devDependencies": {
+    "@types/node": "^25.3.5",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.4",
     "concurrently": "^9.2.1",
     "electron": "^40.8.0",
     "electron-builder": "^26.8.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "wait-on": "^8.0.5"
   }

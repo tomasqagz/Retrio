@@ -1,30 +1,38 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
+import type { Game, Platform } from '../../shared/types'
 import './GameDetail.css'
 
-const PLATFORM_COLORS = {
+const PLATFORM_COLORS: Record<Platform, string> = {
   NES: '#e53e3e',
   SNES: '#7b2d8b',
   'Sega Genesis': '#1a56db',
   PS1: '#00439c',
   PS2: '#00439c',
   N64: '#008a00',
+  PC: '#666',
+  Desconocida: '#444',
 }
 
-async function fetchDetail(id) {
+interface GameDetailProps {
+  game: Game
+  onClose: () => void
+}
+
+async function fetchDetail(id: number): Promise<Game | null> {
   if (window.retrio) {
     return window.retrio.getGameById(id)
   }
   const res = await fetch(`/api/igdb/game/${id}`)
   if (!res.ok) throw new Error(res.statusText)
-  return res.json()
+  return res.json() as Promise<Game>
 }
 
-export default function GameDetail({ game, onClose }) {
-  const [detail, setDetail] = useState(null)
+export default function GameDetail({ game, onClose }: GameDetailProps) {
+  const [detail, setDetail] = useState<Game | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    function onKey(e) {
+    function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', onKey)
@@ -39,8 +47,8 @@ export default function GameDetail({ game, onClose }) {
       .finally(() => setLoading(false))
   }, [game.id])
 
-  const data = detail || game
-  const platformColor = PLATFORM_COLORS[data.platform] || '#555'
+  const data = detail ?? game
+  const platformColor = PLATFORM_COLORS[data.platform] ?? '#555'
 
   return (
     <div className="game-detail-overlay" onClick={onClose}>
@@ -67,8 +75,8 @@ export default function GameDetail({ game, onClose }) {
             <h2 className="game-detail-title">{data.title}</h2>
 
             <div className="game-detail-meta">
-              {data.year && <span className="meta-chip">{data.year}</span>}
-              {data.rating && (
+              {data.year != null && <span className="meta-chip">{data.year}</span>}
+              {data.rating != null && (
                 <span className="meta-chip meta-chip--rating">★ {data.rating}</span>
               )}
               {data.genres?.map((g) => (
@@ -82,7 +90,7 @@ export default function GameDetail({ game, onClose }) {
               <p className="game-detail-summary">{data.summary}</p>
             )}
 
-            {data.developers?.length > 0 && (
+            {data.developers && data.developers.length > 0 && (
               <p className="game-detail-developer">
                 Desarrollado por {data.developers.join(', ')}
               </p>

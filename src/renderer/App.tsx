@@ -1,10 +1,9 @@
-import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import Sidebar from './components/Sidebar.jsx'
-import Home from './pages/Home.jsx'
-import Search from './pages/Search.jsx'
-import Library from './pages/Library.jsx'
-import Settings from './pages/Settings.jsx'
+import Sidebar from './components/Sidebar'
+import Home from './pages/Home'
+import Search from './pages/Search'
+import Library from './pages/Library'
+import Settings from './pages/Settings'
 import './styles/app.css'
 
 export default function App() {

@@ -2,7 +2,13 @@ import React from 'react'
 import { NavLink } from 'react-router-dom'
 import './Sidebar.css'
 
-const NAV_ITEMS = [
+interface NavItem {
+  to: string
+  icon: React.FC<{ className?: string }>
+  label: string
+}
+
+const NAV_ITEMS: NavItem[] = [
   { to: '/home', icon: HomeIcon, label: 'Inicio' },
   { to: '/search', icon: SearchIcon, label: 'Buscar' },
   { to: '/library', icon: LibraryIcon, label: 'Biblioteca' },
@@ -39,7 +45,7 @@ export default function Sidebar() {
   )
 }
 
-function HomeIcon({ className }) {
+function HomeIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
@@ -48,7 +54,7 @@ function HomeIcon({ className }) {
   )
 }
 
-function SearchIcon({ className }) {
+function SearchIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="11" cy="11" r="8" />
@@ -57,7 +63,7 @@ function SearchIcon({ className }) {
   )
 }
 
-function LibraryIcon({ className }) {
+function LibraryIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="3" width="7" height="18" />
@@ -67,7 +73,7 @@ function LibraryIcon({ className }) {
   )
 }
 
-function SettingsIcon({ className }) {
+function SettingsIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="3" />

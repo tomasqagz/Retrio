@@ -1,6 +1,7 @@
-const { contextBridge, ipcRenderer } = require('electron')
+import { contextBridge, ipcRenderer } from 'electron'
+import type { RetrioAPI, DownloadProgress } from '../shared/types'
 
-contextBridge.exposeInMainWorld('retrio', {
+const api: RetrioAPI = {
   // IGDB
   searchGames: (query, platform) =>
     ipcRenderer.invoke('igdb:search', { query, platform }),
@@ -14,8 +15,9 @@ contextBridge.exposeInMainWorld('retrio', {
     ipcRenderer.invoke('torrent:download', { magnetUri, destPath }),
   cancelDownload: (infoHash) =>
     ipcRenderer.invoke('torrent:cancel', { infoHash }),
-  onDownloadProgress: (callback) =>
-    ipcRenderer.on('torrent:progress', (_e, data) => callback(data)),
+  onDownloadProgress: (callback: (data: DownloadProgress) => void) => {
+    ipcRenderer.on('torrent:progress', (_e, data: DownloadProgress) => callback(data))
+  },
 
   // Emuladores (próximamente)
   launchGame: (romPath, platform) =>
@@ -29,4 +31,6 @@ contextBridge.exposeInMainWorld('retrio', {
   getLibrary: () => ipcRenderer.invoke('library:get'),
   addToLibrary: (game) => ipcRenderer.invoke('library:add', game),
   removeFromLibrary: (id) => ipcRenderer.invoke('library:remove', id),
-})
+}
+
+contextBridge.exposeInMainWorld('retrio', api)
