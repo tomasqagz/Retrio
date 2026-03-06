@@ -2,10 +2,10 @@
   "name": "retrio",
   "version": "1.0.0",
   "description": "Launcher de juegos retro estilo Stremio",
-  "main": "src/main/index.ts",
+  "main": "electron-main.cjs",
   "scripts": {
     "dev": "vite --config vite.config.ts",
-    "electron": "electron --import ./node_modules/tsx/dist/esm/index.mjs .",
+    "electron": "electron .",
     "dev:electron": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && npm run electron\"",
     "build": "tsc -p tsconfig.node.json && vite build --config vite.config.ts",
     "dist": "npm run build && electron-builder",
