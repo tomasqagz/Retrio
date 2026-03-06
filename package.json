@@ -5,7 +5,7 @@
   "main": "src/main/index.ts",
   "scripts": {
     "dev": "vite --config vite.config.ts",
-    "electron": "electron --require tsx/cjs .",
+    "electron": "electron --import tsx .",
     "dev:electron": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && npm run electron\"",
     "build": "tsc -p tsconfig.node.json && vite build --config vite.config.ts",
     "dist": "npm run build && electron-builder",
