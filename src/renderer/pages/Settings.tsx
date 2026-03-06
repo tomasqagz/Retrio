@@ -1,29 +1,34 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Emulator } from '../../shared/types'
 import './Settings.css'
 
-const INITIAL_EMULATORS: Emulator[] = [
-  { id: 'retroarch', name: 'RetroArch', platforms: ['NES', 'SNES', 'Sega Genesis', 'N64'], status: 'installed', version: '1.19.1' },
-  { id: 'duckstation', name: 'DuckStation', platforms: ['PS1'], status: 'not_installed', version: null },
-  { id: 'pcsx2', name: 'PCSX2', platforms: ['PS2'], status: 'not_installed', version: null },
-]
+const IS_ELECTRON = Boolean(window.retrio)
 
 export default function Settings() {
-  const [emulators, setEmulators] = useState<Emulator[]>(INITIAL_EMULATORS)
+  const [emulators, setEmulators] = useState<Emulator[]>([])
   const [romsPath, setRomsPath] = useState('~/Retrio/roms')
   const [emulatorsPath, setEmulatorsPath] = useState('~/Retrio/emulators')
 
-  function handleInstall(id: string) {
+  useEffect(() => {
+    if (!IS_ELECTRON) return
+    void window.retrio.getEmulatorStatus().then(setEmulators)
+  }, [])
+
+  async function handleInstall(id: string) {
+    if (!IS_ELECTRON) return
     setEmulators((prev) =>
       prev.map((e) => (e.id === id ? { ...e, status: 'installing' as const } : e))
     )
-    setTimeout(() => {
+    try {
+      await window.retrio.installEmulator(id)
+      const updated = await window.retrio.getEmulatorStatus()
+      setEmulators(updated)
+    } catch {
+      // Revert to not_installed if winget failed
       setEmulators((prev) =>
-        prev.map((e) =>
-          e.id === id ? { ...e, status: 'installed' as const, version: '1.0.0' } : e
-        )
+        prev.map((e) => (e.id === id ? { ...e, status: 'not_installed' as const } : e))
       )
-    }, 2000)
+    }
   }
 
   return (
@@ -53,7 +58,7 @@ export default function Settings() {
                   <span className="status-badge status-badge--loading">Instalando...</span>
                 )}
                 {emu.status === 'not_installed' && (
-                  <button className="btn-install" onClick={() => handleInstall(emu.id)}>
+                  <button className="btn-install" onClick={() => void handleInstall(emu.id)}>
                     Instalar
                   </button>
                 )}

@@ -10,7 +10,8 @@ import {
   isInLibrary,
 } from './database'
 import { startDownload, cancelDownload, destroyClient } from './torrent'
-import type { Game, DownloadProgress } from '../shared/types'
+import { getEmulatorStatus, installEmulator, launchGame } from './emulator'
+import type { Game, DownloadProgress, Platform } from '../shared/types'
 
 const isDev = !app.isPackaged
 
@@ -100,6 +101,20 @@ ipcMain.handle('torrent:download', (_e, { magnetUri, game }: { magnetUri: string
 
 ipcMain.handle('torrent:cancel', (_e, { infoHash }: { infoHash: string }) => {
   cancelDownload(infoHash)
+})
+
+// ── Emulator IPC ──────────────────────────────────────────────────────────────
+
+ipcMain.handle('emulator:status', () => {
+  return getEmulatorStatus()
+})
+
+ipcMain.handle('emulator:install', async (_e, { name }: { name: string }) => {
+  await installEmulator(name)
+})
+
+ipcMain.handle('emulator:launch', (_e, { romPath, platform }: { romPath: string; platform: Platform }) => {
+  launchGame(romPath, platform)
 })
 
 // ── App lifecycle ─────────────────────────────────────────────────────────────
