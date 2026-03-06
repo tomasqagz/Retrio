@@ -4,3 +4,4 @@ dist/
 roms/
 emulators/
 *.log
+src/main/preload.js
