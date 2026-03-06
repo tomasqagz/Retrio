@@ -193,8 +193,11 @@
 .btn-action--download {
   background: var(--accent);
   color: #fff;
-  opacity: 0.5;
-  cursor: not-allowed;
+}
+
+.btn-action--download:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
 }
 
 .btn-action-soon {
@@ -233,4 +236,75 @@
 .btn-action:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* ── Magnet input area ─────────────────────────────────────────── */
+
+.magnet-input-area {
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.magnet-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.magnet-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.magnet-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: monospace;
+  font-size: 12px;
+  padding: 8px 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.magnet-input:focus {
+  border-color: var(--accent);
+}
+
+.magnet-error {
+  font-size: 12px;
+  color: var(--red);
+  margin: 0;
+}
+
+.btn-action--confirm {
+  background: var(--accent);
+  color: #fff;
+  white-space: nowrap;
+}
+
+.btn-action--confirm:hover:not(:disabled) {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.btn-action--ghost {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.btn-action--ghost:hover {
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
 }

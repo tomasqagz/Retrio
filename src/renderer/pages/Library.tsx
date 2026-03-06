@@ -29,6 +29,36 @@ export default function Library() {
     void loadLibrary()
   }, [loadLibrary])
 
+  useEffect(() => {
+    if (!IS_ELECTRON) return
+
+    window.retrio.onDownloadProgress((data) => {
+      setGames((prev) =>
+        prev.map((g) =>
+          g.id === data.gameId ? { ...g, progress: data.progress, downloading: true } : g
+        )
+      )
+    })
+
+    window.retrio.onDownloadDone((data) => {
+      setGames((prev) =>
+        prev.map((g) =>
+          g.id === data.gameId
+            ? { ...g, downloading: false, downloaded: true, romPath: data.romPath, progress: 100 }
+            : g
+        )
+      )
+    })
+
+    window.retrio.onDownloadError((data) => {
+      setGames((prev) =>
+        prev.map((g) =>
+          g.id === data.gameId ? { ...g, downloading: false, progress: 0 } : g
+        )
+      )
+    })
+  }, [])
+
   async function handleRemove(game: Game) {
     if (!IS_ELECTRON) return
     await window.retrio.removeFromLibrary(game.id)

@@ -9,7 +9,8 @@ import {
   removeFromLibrary,
   isInLibrary,
 } from './database'
-import type { Game } from '../shared/types'
+import { startDownload, cancelDownload, destroyClient } from './torrent'
+import type { Game, DownloadProgress } from '../shared/types'
 
 const isDev = !app.isPackaged
 
@@ -77,6 +78,30 @@ ipcMain.handle('library:has', (_e, { id }: { id: number }) => {
   return isInLibrary(id)
 })
 
+// ── Torrent IPC ───────────────────────────────────────────────────────────────
+
+ipcMain.handle('torrent:download', (_e, { magnetUri, game }: { magnetUri: string; game: Game }) => {
+  const win = BrowserWindow.getAllWindows()[0]
+
+  startDownload({
+    magnetUri,
+    game,
+    onProgress: (data: DownloadProgress) => {
+      win?.webContents.send('torrent:progress', data)
+    },
+    onDone: (romPath: string) => {
+      win?.webContents.send('torrent:done', { gameId: game.id, romPath })
+    },
+    onError: (err: Error) => {
+      win?.webContents.send('torrent:error', { gameId: game.id, message: err.message })
+    },
+  })
+})
+
+ipcMain.handle('torrent:cancel', (_e, { infoHash }: { infoHash: string }) => {
+  cancelDownload(infoHash)
+})
+
 // ── App lifecycle ─────────────────────────────────────────────────────────────
 
 app.whenReady().then(() => {
@@ -87,5 +112,6 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
+  destroyClient()
   if (process.platform !== 'darwin') app.quit()
 })

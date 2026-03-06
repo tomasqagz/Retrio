@@ -21,9 +21,7 @@ interface GameDetailProps {
 const IS_ELECTRON = Boolean(window.retrio)
 
 async function fetchDetail(id: number): Promise<Game | null> {
-  if (IS_ELECTRON) {
-    return window.retrio.getGameById(id)
-  }
+  if (IS_ELECTRON) return window.retrio.getGameById(id)
   const res = await fetch(`/api/igdb/game/${id}`)
   if (!res.ok) throw new Error(res.statusText)
   return res.json() as Promise<Game>
@@ -34,6 +32,12 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
   const [loading, setLoading] = useState(true)
   const [inLibrary, setInLibrary] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  // Magnet link flow
+  const [showMagnet, setShowMagnet] = useState(false)
+  const [magnetUri, setMagnetUri] = useState('')
+  const [downloading, setDownloading] = useState(false)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -50,7 +54,6 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
       .catch(() => {})
       .finally(() => setLoading(false))
 
-    // Verificar si ya está en la biblioteca
     if (IS_ELECTRON) {
       void window.retrio.isInLibrary(game.id).then(setInLibrary)
     }
@@ -73,6 +76,24 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
     setSaving(false)
   }, [game.id])
 
+  const handleStartDownload = useCallback(async () => {
+    if (!magnetUri.trim().startsWith('magnet:')) {
+      setDownloadError('El link debe empezar con magnet:')
+      return
+    }
+    setDownloadError(null)
+    setDownloading(true)
+    const gameToDownload = detail ?? game
+    await window.retrio.downloadGame(magnetUri.trim(), {
+      ...gameToDownload,
+      downloaded: false,
+      downloading: true,
+      progress: 0,
+    })
+    setInLibrary(true)
+    onClose()
+  }, [magnetUri, detail, game, onClose])
+
   const data = detail ?? game
   const platformColor = PLATFORM_COLORS[data.platform] ?? '#555'
 
@@ -88,9 +109,7 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
             {data.coverUrl ? (
               <img src={data.coverUrl} alt={data.title} />
             ) : (
-              <div className="game-detail-cover-placeholder">
-                {data.title[0]}
-              </div>
+              <div className="game-detail-cover-placeholder">{data.title[0]}</div>
             )}
           </div>
 
@@ -112,9 +131,7 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
 
             {loading && <p className="game-detail-loading">Cargando detalles...</p>}
 
-            {data.summary && (
-              <p className="game-detail-summary">{data.summary}</p>
-            )}
+            {data.summary && <p className="game-detail-summary">{data.summary}</p>}
 
             {data.developers && data.developers.length > 0 && (
               <p className="game-detail-developer">
@@ -122,19 +139,56 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
               </p>
             )}
 
+            {/* Magnet input */}
+            {showMagnet && (
+              <div className="magnet-input-area">
+                <p className="magnet-hint">
+                  Pegá el magnet link de la ROM (desde Archive.org u otra fuente verificada)
+                </p>
+                <div className="magnet-input-row">
+                  <input
+                    className="magnet-input"
+                    type="text"
+                    placeholder="magnet:?xt=urn:btih:..."
+                    value={magnetUri}
+                    onChange={(e) => setMagnetUri(e.target.value)}
+                    autoFocus
+                  />
+                  <button
+                    className="btn-action btn-action--confirm"
+                    onClick={() => void handleStartDownload()}
+                    disabled={downloading || !magnetUri.trim()}
+                  >
+                    {downloading ? 'Iniciando...' : 'Descargar'}
+                  </button>
+                  <button
+                    className="btn-action btn-action--ghost"
+                    onClick={() => { setShowMagnet(false); setMagnetUri(''); setDownloadError(null) }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+                {downloadError && (
+                  <p className="magnet-error">{downloadError}</p>
+                )}
+              </div>
+            )}
+
             <div className="game-detail-actions">
               {data.downloaded ? (
                 <button className="btn-action btn-action--play">
                   <PlayIcon /> Jugar
                 </button>
-              ) : (
-                <button className="btn-action btn-action--download" disabled>
+              ) : IS_ELECTRON && !showMagnet ? (
+                <button
+                  className="btn-action btn-action--download"
+                  onClick={() => setShowMagnet(true)}
+                >
                   <DownloadIcon /> Descargar
-                  <span className="btn-action-soon">próximamente</span>
                 </button>
-              )}
+              ) : null}
 
-              {IS_ELECTRON && (
+              {IS_ELECTRON && !showMagnet && (
                 inLibrary ? (
                   <button
                     className="btn-action btn-action--remove"
@@ -164,20 +218,13 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
 function CloseIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
+      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
     </svg>
   )
 }
-
 function PlayIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor">
-      <polygon points="5,3 19,12 5,21" />
-    </svg>
-  )
+  return <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21" /></svg>
 }
-
 function DownloadIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -187,16 +234,13 @@ function DownloadIcon() {
     </svg>
   )
 }
-
 function PlusIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
+      <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   )
 }
-
 function CheckIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

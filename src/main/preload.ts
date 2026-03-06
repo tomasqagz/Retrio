@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { RetrioAPI, DownloadProgress } from '../shared/types'
+import type { RetrioAPI, DownloadProgress, Game } from '../shared/types'
 
 const api: RetrioAPI = {
   // IGDB
@@ -10,13 +10,19 @@ const api: RetrioAPI = {
   getGameById: (id) =>
     ipcRenderer.invoke('igdb:game', { id }),
 
-  // Torrent (próximamente)
-  downloadGame: (magnetUri, destPath) =>
-    ipcRenderer.invoke('torrent:download', { magnetUri, destPath }),
+  // Torrent
+  downloadGame: (magnetUri: string, game: Game) =>
+    ipcRenderer.invoke('torrent:download', { magnetUri, game }),
   cancelDownload: (infoHash) =>
     ipcRenderer.invoke('torrent:cancel', { infoHash }),
   onDownloadProgress: (callback: (data: DownloadProgress) => void) => {
     ipcRenderer.on('torrent:progress', (_e, data: DownloadProgress) => callback(data))
+  },
+  onDownloadDone: (callback: (data: { gameId: number; romPath: string }) => void) => {
+    ipcRenderer.on('torrent:done', (_e, data) => callback(data as { gameId: number; romPath: string }))
+  },
+  onDownloadError: (callback: (data: { gameId: number; message: string }) => void) => {
+    ipcRenderer.on('torrent:error', (_e, data) => callback(data as { gameId: number; message: string }))
   },
 
   // Emuladores (próximamente)

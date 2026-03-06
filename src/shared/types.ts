@@ -62,9 +62,11 @@ export interface RetrioAPI {
   getGameById: (id: number) => Promise<Game | null>
 
   // Torrent
-  downloadGame: (magnetUri: string, destPath: string) => Promise<void>
+  downloadGame: (magnetUri: string, game: Game) => Promise<void>
   cancelDownload: (infoHash: string) => Promise<void>
   onDownloadProgress: (callback: (data: DownloadProgress) => void) => void
+  onDownloadDone: (callback: (data: { gameId: number; romPath: string }) => void) => void
+  onDownloadError: (callback: (data: { gameId: number; message: string }) => void) => void
 
   // Emuladores
   launchGame: (romPath: string, platform: Platform) => Promise<void>
