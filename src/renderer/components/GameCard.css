@@ -112,6 +112,37 @@
   color: #fff;
 }
 
+.game-card-remove-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.15s;
+}
+
+.game-card:hover .game-card-remove-btn {
+  opacity: 1;
+}
+
+.game-card-remove-btn:hover {
+  background: var(--red);
+}
+
+.game-card-remove-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
 .game-card-progress {
   height: 3px;
   background: var(--bg-hover);

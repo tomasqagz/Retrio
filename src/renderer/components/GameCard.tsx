@@ -18,9 +18,10 @@ interface GameCardProps {
   onClick?: (game: Game) => void
   onPlay?: (game: Game) => void
   onDownload?: (game: Game) => void
+  onRemove?: (game: Game) => void
 }
 
-export default function GameCard({ game, onClick, onPlay, onDownload }: GameCardProps) {
+export default function GameCard({ game, onClick, onPlay, onDownload, onRemove }: GameCardProps) {
   const { title, platform, coverUrl, year, rating, downloaded, downloading, progress } = game
   const platformColor = PLATFORM_COLORS[platform] ?? '#555'
 
@@ -66,6 +67,15 @@ export default function GameCard({ game, onClick, onPlay, onDownload }: GameCard
               <span>Descargar</span>
             </button>
           )}
+          {onRemove && (
+            <button
+              className="game-card-remove-btn"
+              title="Quitar de la biblioteca"
+              onClick={(e) => handleActionClick(e, onRemove)}
+            >
+              <TrashIcon />
+            </button>
+          )}
         </div>
       </div>
 
@@ -87,6 +97,17 @@ function PlayIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor">
       <polygon points="5,3 19,12 5,21" />
+    </svg>
+  )
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
     </svg>
   )
 }

@@ -1,38 +1,77 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import GameCard from '../components/GameCard'
+import GameDetail from '../components/GameDetail'
 import type { Game } from '../../shared/types'
 import './Library.css'
 
-const INITIAL_GAMES: Game[] = [
-  { id: 3, title: 'Super Mario 64', platform: 'N64', year: 1996, coverUrl: null, coverUrlHd: null, summary: null, rating: null, downloaded: true, downloading: false },
-  { id: 9, title: 'Metal Gear Solid', platform: 'PS1', year: 1998, coverUrl: null, coverUrlHd: null, summary: null, rating: null, downloaded: true, downloading: false },
-  { id: 10, title: 'Chrono Trigger', platform: 'SNES', year: 1995, coverUrl: null, coverUrlHd: null, summary: null, rating: null, downloaded: true, downloading: false },
-  { id: 11, title: 'Streets of Rage 2', platform: 'Sega Genesis', year: 1992, coverUrl: null, coverUrlHd: null, summary: null, rating: null, downloaded: false, downloading: true, progress: 62 },
-]
-
 type SortKey = 'recent' | 'title' | 'year'
 
+const IS_ELECTRON = Boolean(window.retrio)
+
 export default function Library() {
-  const [games] = useState<Game[]>(INITIAL_GAMES)
+  const [games, setGames] = useState<Game[]>([])
+  const [loading, setLoading] = useState(IS_ELECTRON)
   const [sortBy, setSortBy] = useState<SortKey>('recent')
+  const [selectedGame, setSelectedGame] = useState<Game | null>(null)
 
-  const downloading = games.filter((g) => g.downloading)
-  const downloaded = games.filter((g) => g.downloaded)
+  const loadLibrary = useCallback(async () => {
+    if (!IS_ELECTRON) return
+    setLoading(true)
+    try {
+      const data = await window.retrio.getLibrary()
+      setGames(data)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-  function handlePlay(game: Game) {
-    alert(`Lanzando ${game.title}...`)
+  useEffect(() => {
+    void loadLibrary()
+  }, [loadLibrary])
+
+  async function handleRemove(game: Game) {
+    if (!IS_ELECTRON) return
+    await window.retrio.removeFromLibrary(game.id)
+    setGames((prev) => prev.filter((g) => g.id !== game.id))
   }
 
-  const sorted = [...downloaded].sort((a, b) => {
-    if (sortBy === 'title') return a.title.localeCompare(b.title)
-    if (sortBy === 'year') return (b.year ?? 0) - (a.year ?? 0)
-    return b.id - a.id
-  })
+  async function handlePlay(game: Game) {
+    if (!IS_ELECTRON || !game.romPath) {
+      alert(`Lanzando ${game.title}... (próximamente)`)
+      return
+    }
+    await window.retrio.launchGame(game.romPath, game.platform)
+  }
+
+  const downloading = games.filter((g) => g.downloading)
+
+  const sorted = games
+    .filter((g) => !g.downloading)
+    .sort((a, b) => {
+      if (sortBy === 'title') return a.title.localeCompare(b.title)
+      if (sortBy === 'year') return (b.year ?? 0) - (a.year ?? 0)
+      return b.id - a.id
+    })
+
+  if (loading) {
+    return (
+      <div className="page library-page">
+        <div className="library-loading">
+          <div className="spinner" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="page library-page">
       <div className="library-header">
-        <h1 className="library-title">Mi biblioteca</h1>
+        <h1 className="library-title">
+          Mi biblioteca
+          {games.length > 0 && (
+            <span className="library-count">{games.length}</span>
+          )}
+        </h1>
         <div className="library-sort">
           <label htmlFor="sort-select" className="sort-label">Ordenar por</label>
           <select
@@ -61,14 +100,15 @@ export default function Library() {
 
       {sorted.length > 0 ? (
         <section className="library-section">
-          <div className="section-header">
-            <h2 className="section-title">
-              {sorted.length} juego{sorted.length !== 1 ? 's' : ''}
-            </h2>
-          </div>
           <div className="games-grid">
             {sorted.map((game) => (
-              <GameCard key={game.id} game={game} onPlay={handlePlay} />
+              <GameCard
+                key={game.id}
+                game={game}
+                onClick={() => setSelectedGame(game)}
+                onPlay={handlePlay}
+                onRemove={handleRemove}
+              />
             ))}
           </div>
         </section>
@@ -77,9 +117,19 @@ export default function Library() {
           <div className="library-empty-icon">📂</div>
           <p className="library-empty-title">Tu biblioteca está vacía</p>
           <p className="library-empty-sub">
-            Ve a Buscar para encontrar y descargar tu primer juego
+            Ve a Buscar para encontrar y añadir tu primer juego
           </p>
         </div>
+      )}
+
+      {selectedGame && (
+        <GameDetail
+          game={selectedGame}
+          onClose={() => {
+            setSelectedGame(null)
+            void loadLibrary()
+          }}
+        />
       )}
     </div>
   )

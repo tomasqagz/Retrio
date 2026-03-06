@@ -2,6 +2,14 @@ import 'dotenv/config'
 import { app, BrowserWindow, shell, ipcMain } from 'electron'
 import path from 'path'
 import { searchGames, getPopularGames, getGameById } from './igdb'
+import {
+  getLibrary,
+  getGameFromLibrary,
+  addToLibrary,
+  removeFromLibrary,
+  isInLibrary,
+} from './database'
+import type { Game } from '../shared/types'
 
 const isDev = !app.isPackaged
 
@@ -45,6 +53,28 @@ ipcMain.handle('igdb:popular', async (_e, { platform }: { platform?: string | nu
 
 ipcMain.handle('igdb:game', async (_e, { id }: { id: number }) => {
   return getGameById(id)
+})
+
+// ── Library IPC ───────────────────────────────────────────────────────────────
+
+ipcMain.handle('library:get', () => {
+  return getLibrary()
+})
+
+ipcMain.handle('library:get-one', (_e, { id }: { id: number }) => {
+  return getGameFromLibrary(id)
+})
+
+ipcMain.handle('library:add', (_e, game: Game) => {
+  addToLibrary(game)
+})
+
+ipcMain.handle('library:remove', (_e, { id }: { id: number }) => {
+  removeFromLibrary(id)
+})
+
+ipcMain.handle('library:has', (_e, { id }: { id: number }) => {
+  return isInLibrary(id)
 })
 
 // ── App lifecycle ─────────────────────────────────────────────────────────────

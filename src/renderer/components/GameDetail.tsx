@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import type { Game, Platform } from '../../shared/types'
 import './GameDetail.css'
 
@@ -18,8 +18,10 @@ interface GameDetailProps {
   onClose: () => void
 }
 
+const IS_ELECTRON = Boolean(window.retrio)
+
 async function fetchDetail(id: number): Promise<Game | null> {
-  if (window.retrio) {
+  if (IS_ELECTRON) {
     return window.retrio.getGameById(id)
   }
   const res = await fetch(`/api/igdb/game/${id}`)
@@ -30,6 +32,8 @@ async function fetchDetail(id: number): Promise<Game | null> {
 export default function GameDetail({ game, onClose }: GameDetailProps) {
   const [detail, setDetail] = useState<Game | null>(null)
   const [loading, setLoading] = useState(true)
+  const [inLibrary, setInLibrary] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -45,6 +49,28 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
       .then((data) => setDetail(data))
       .catch(() => {})
       .finally(() => setLoading(false))
+
+    // Verificar si ya está en la biblioteca
+    if (IS_ELECTRON) {
+      void window.retrio.isInLibrary(game.id).then(setInLibrary)
+    }
+  }, [game.id])
+
+  const handleAddToLibrary = useCallback(async () => {
+    if (!IS_ELECTRON) return
+    setSaving(true)
+    const gameToSave = detail ?? game
+    await window.retrio.addToLibrary({ ...gameToSave, downloaded: false, downloading: false })
+    setInLibrary(true)
+    setSaving(false)
+  }, [detail, game])
+
+  const handleRemoveFromLibrary = useCallback(async () => {
+    if (!IS_ELECTRON) return
+    setSaving(true)
+    await window.retrio.removeFromLibrary(game.id)
+    setInLibrary(false)
+    setSaving(false)
   }, [game.id])
 
   const data = detail ?? game
@@ -102,9 +128,30 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
                   <PlayIcon /> Jugar
                 </button>
               ) : (
-                <button className="btn-action btn-action--download">
+                <button className="btn-action btn-action--download" disabled>
                   <DownloadIcon /> Descargar
+                  <span className="btn-action-soon">próximamente</span>
                 </button>
+              )}
+
+              {IS_ELECTRON && (
+                inLibrary ? (
+                  <button
+                    className="btn-action btn-action--remove"
+                    onClick={() => void handleRemoveFromLibrary()}
+                    disabled={saving}
+                  >
+                    <CheckIcon /> En biblioteca
+                  </button>
+                ) : (
+                  <button
+                    className="btn-action btn-action--add"
+                    onClick={() => void handleAddToLibrary()}
+                    disabled={saving}
+                  >
+                    <PlusIcon /> Añadir
+                  </button>
+                )
               )}
             </div>
           </div>
@@ -137,6 +184,23 @@ function DownloadIcon() {
       <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
       <polyline points="7 10 12 15 17 10" />
       <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  )
+}
+
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  )
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
     </svg>
   )
 }

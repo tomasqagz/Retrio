@@ -27,10 +27,11 @@ const api: RetrioAPI = {
   getEmulatorStatus: () =>
     ipcRenderer.invoke('emulator:status'),
 
-  // Biblioteca SQLite (próximamente)
+  // Biblioteca SQLite
   getLibrary: () => ipcRenderer.invoke('library:get'),
   addToLibrary: (game) => ipcRenderer.invoke('library:add', game),
-  removeFromLibrary: (id) => ipcRenderer.invoke('library:remove', id),
+  removeFromLibrary: (id) => ipcRenderer.invoke('library:remove', { id }),
+  isInLibrary: (id) => ipcRenderer.invoke('library:has', { id }),
 }
 
 contextBridge.exposeInMainWorld('retrio', api)

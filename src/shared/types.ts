@@ -75,6 +75,7 @@ export interface RetrioAPI {
   getLibrary: () => Promise<Game[]>
   addToLibrary: (game: Game) => Promise<void>
   removeFromLibrary: (id: number) => Promise<void>
+  isInLibrary: (id: number) => Promise<boolean>
 }
 
 // ── Extensión global de Window para el renderer ───────────────────────────────
