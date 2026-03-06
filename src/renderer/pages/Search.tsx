@@ -158,6 +158,7 @@ export default function Search() {
                   key={game.id}
                   game={game}
                   onClick={() => setSelectedGame(game)}
+                  onDownload={() => setSelectedGame(game)}
                 />
               ))}
             </div>
