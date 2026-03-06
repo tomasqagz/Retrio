@@ -1,0 +1,185 @@
+.settings-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  margin-bottom: 32px;
+}
+
+.settings-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 16px;
+}
+
+.settings-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.settings-section-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.emulators-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.emulator-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.emulator-row:last-child {
+  border-bottom: none;
+}
+
+.emulator-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.emulator-platforms {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.emulator-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.emulator-version {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.status-badge {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 99px;
+}
+
+.status-badge--ok {
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--green);
+}
+
+.status-badge--loading {
+  background: rgba(234, 179, 8, 0.12);
+  color: var(--yellow);
+}
+
+.btn-install {
+  padding: 6px 14px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+  border: none;
+}
+
+.btn-install:hover {
+  background: var(--accent-hover);
+}
+
+.path-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.path-row:last-child {
+  margin-bottom: 0;
+}
+
+.path-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  width: 90px;
+  flex-shrink: 0;
+}
+
+.path-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.path-input {
+  flex: 1;
+  padding: 8px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+
+.path-input:focus {
+  border-color: var(--accent);
+}
+
+.btn-browse {
+  padding: 8px 14px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-browse:hover {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.about-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.about-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.about-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  width: 80px;
+}
+
+.about-value {
+  font-size: 13px;
+  color: var(--text-primary);
+}

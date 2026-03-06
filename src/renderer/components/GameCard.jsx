@@ -1,0 +1,93 @@
+import React from 'react'
+import './GameCard.css'
+
+const PLATFORM_COLORS = {
+  NES: '#e53e3e',
+  SNES: '#7b2d8b',
+  'Sega Genesis': '#1a56db',
+  PS1: '#00439c',
+  PS2: '#00439c',
+  N64: '#008a00',
+  PC: '#666',
+}
+
+export default function GameCard({ game, onClick, onPlay, onDownload }) {
+  const { title, platform, coverUrl, year, rating, downloaded, downloading, progress } = game
+  const platformColor = PLATFORM_COLORS[platform] || '#555'
+
+  function handleActionClick(e, fn) {
+    e.stopPropagation()
+    fn?.(game)
+  }
+
+  return (
+    <div className="game-card" onClick={() => onClick?.(game)}>
+      <div className="game-card-cover">
+        {coverUrl ? (
+          <img src={coverUrl} alt={title} loading="lazy" />
+        ) : (
+          <div className="game-card-cover-placeholder">
+            <span>{title[0]}</span>
+          </div>
+        )}
+
+        <div className="game-card-platform" style={{ background: platformColor }}>
+          {platform}
+        </div>
+
+        {rating && (
+          <div className="game-card-rating">★ {rating}</div>
+        )}
+
+        <div className="game-card-hover-overlay">
+          {downloaded ? (
+            <button
+              className="game-card-action-btn game-card-action-btn--play"
+              onClick={(e) => handleActionClick(e, onPlay)}
+            >
+              <PlayIcon />
+              <span>Jugar</span>
+            </button>
+          ) : (
+            <button
+              className="game-card-action-btn game-card-action-btn--download"
+              onClick={(e) => handleActionClick(e, onDownload)}
+            >
+              <DownloadIcon />
+              <span>Descargar</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {downloading && (
+        <div className="game-card-progress">
+          <div className="game-card-progress-bar" style={{ width: `${progress || 0}%` }} />
+        </div>
+      )}
+
+      <div className="game-card-info">
+        <div className="game-card-title" title={title}>{title}</div>
+        {year && <div className="game-card-year">{year}</div>}
+      </div>
+    </div>
+  )
+}
+
+function PlayIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor">
+      <polygon points="5,3 19,12 5,21" />
+    </svg>
+  )
+}
+
+function DownloadIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  )
+}

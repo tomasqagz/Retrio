@@ -1,0 +1,25 @@
+{
+  "appId": "io.retrio.app",
+  "productName": "Retrio",
+  "directories": {
+    "buildResources": "public",
+    "output": "dist/app"
+  },
+  "files": [
+    "src/main/**/*",
+    "dist/renderer/**/*"
+  ],
+  "win": {
+    "target": "nsis",
+    "icon": "public/icon.ico"
+  },
+  "mac": {
+    "target": "dmg",
+    "icon": "public/icon.icns",
+    "category": "public.app-category.games"
+  },
+  "linux": {
+    "target": "AppImage",
+    "category": "Game"
+  }
+}
