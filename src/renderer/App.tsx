@@ -1,12 +1,27 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
+import Toaster, { toast } from './components/Toaster'
 import Home from './pages/Home'
 import Search from './pages/Search'
 import Library from './pages/Library'
 import Settings from './pages/Settings'
 import './styles/app.css'
 
+const IS_ELECTRON = Boolean(window.retrio)
+
 export default function App() {
+  useEffect(() => {
+    if (!IS_ELECTRON) return
+    window.retrio.onDownloadDone((data) => {
+      toast(`Descarga completa — juego listo para jugar`, 'success')
+      void data
+    })
+    window.retrio.onDownloadError((data) => {
+      toast(`Error en la descarga: ${data.message}`, 'error')
+    })
+  }, [])
+
   return (
     <BrowserRouter>
       <div className="app-layout">
@@ -21,6 +36,7 @@ export default function App() {
           </Routes>
         </main>
       </div>
+      <Toaster />
     </BrowserRouter>
   )
 }
