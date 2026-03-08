@@ -1,8 +1,7 @@
 {
   "extends": "./tsconfig.node.json",
   "compilerOptions": {
-    "outDir": "src/main",
-    "rootDir": "src/main",
+    "outDir": "dist/preload",
     "declaration": false
   },
   "include": ["src/main/preload.ts", "src/shared/types.ts"]

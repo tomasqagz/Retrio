@@ -5,12 +5,11 @@ import type { Game } from '../shared/types'
 
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
-const DB_PATH = path.join(app.getPath('userData'), 'retrio.db')
-
 let db: Database.Database
 
 export function getDb(): Database.Database {
   if (!db) {
+    const DB_PATH = path.join(app.getPath('userData'), 'retrio.db')
     db = new Database(DB_PATH)
     db.pragma('journal_mode = WAL')
     db.pragma('foreign_keys = ON')
@@ -41,6 +40,8 @@ function migrate(db: Database.Database): void {
       added_at    INTEGER NOT NULL DEFAULT (unixepoch())
     );
   `)
+  // Reset any downloads that were in progress when the app was last closed
+  db.exec(`DELETE FROM games WHERE downloading = 1 AND downloaded = 0`)
 }
 
 // ── Row type (SQLite returns plain objects) ───────────────────────────────────

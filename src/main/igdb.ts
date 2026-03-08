@@ -1,4 +1,4 @@
-import type { Game, Platform } from '../shared/types'
+import type { Game, Platform, SortBy } from '../shared/types'
 
 const TWITCH_TOKEN_URL = 'https://id.twitch.tv/oauth2/token'
 const IGDB_BASE_URL = 'https://api.igdb.com/v4'
@@ -11,7 +11,6 @@ const PLATFORM_IDS: Record<Platform, number> = {
   PS1: 7,
   PS2: 8,
   N64: 4,
-  PC: 6,
   Desconocida: -1,
 }
 
@@ -41,6 +40,7 @@ interface IgdbGame {
   summary?: string
   cover?: { image_id: string }
   screenshots?: Array<{ image_id: string }>
+  videos?: Array<{ video_id: string }>
   genres?: Array<{ name: string }>
   involved_companies?: Array<{ company?: { name: string } }>
   rating?: number
@@ -127,10 +127,38 @@ function mapGame(g: IgdbGame, preferredIds: number[]): Game {
   }
 }
 
+export const GENRES: Array<{ id: number; label: string }> = [
+  { id:  4, label: 'Peleas' },
+  { id:  5, label: 'Shooter' },
+  { id:  8, label: 'Plataformas' },
+  { id:  9, label: 'Puzzle' },
+  { id: 10, label: 'Carreras' },
+  { id: 11, label: 'Estrategia en tiempo real' },
+  { id: 12, label: 'RPG' },
+  { id: 13, label: 'Simulador' },
+  { id: 14, label: 'Deportes' },
+  { id: 15, label: 'Estrategia' },
+  { id: 25, label: 'Hack & Slash' },
+  { id: 31, label: 'Aventura' },
+  { id: 33, label: 'Arcade' },
+]
+
+const IGDB_SORT: Record<SortBy, string> = {
+  relevance:  'rating desc',
+  rating:     'rating desc',
+  popular:    'rating_count desc',
+  newest:     'first_release_date desc',
+  oldest:     'first_release_date asc',
+}
+
+const PAGE_SIZE = 48
+
 export async function searchGames(
   query: string,
   platform: string | null,
-  limit = 24
+  sortBy: SortBy = 'relevance',
+  offset = 0,
+  genreId: number | null = null
 ): Promise<Game[]> {
   const { clientId, clientSecret } = getCredentials()
   const accessToken = await getAccessToken(clientId, clientSecret)
@@ -141,26 +169,45 @@ export async function searchGames(
       : ALL_PLATFORM_IDS
 
   const platformFilter = `platforms = (${platformIds.join(',')})`
+  const genreFilter = genreId ? `& genres = (${genreId}) ` : ''
+  const ratingFilter = sortBy === 'oldest' ? '' : '& rating > 0 '
 
   const body = query
-    ? `search "${query.replace(/"/g, '')}";
-       fields id,name,platforms,first_release_date,summary,cover.image_id,rating;
-       where ${platformFilter} & version_parent = null;
-       limit ${limit};`
-    : `fields id,name,platforms,first_release_date,summary,cover.image_id,rating;
-       where ${platformFilter} & rating > 75 & version_parent = null;
-       sort rating desc;
-       limit ${limit};`
+    ? // IGDB search doesn't support sort — fetch then sort client-side
+      `search "${query.replace(/"/g, '')}";
+       fields id,name,platforms,first_release_date,summary,cover.image_id,rating,rating_count;
+       where ${platformFilter} ${genreFilter}& version_parent = null;
+       limit ${PAGE_SIZE};
+       offset ${offset};`
+    : `fields id,name,platforms,first_release_date,summary,cover.image_id,rating,rating_count;
+       where ${platformFilter} ${genreFilter}${ratingFilter}& version_parent = null;
+       sort ${IGDB_SORT[sortBy]};
+       limit ${PAGE_SIZE};
+       offset ${offset};`
 
   const games = await igdbPost('/games', body, clientId, accessToken)
-  return games.map((g) => mapGame(g, platformIds))
+  const mapped = games.map((g) => mapGame(g, platformIds))
+
+  // Client-side sort for text searches
+  if (query) {
+    mapped.sort((a, b) => {
+      if (sortBy === 'newest') return (b.year ?? 0) - (a.year ?? 0)
+      if (sortBy === 'oldest') return (a.year ?? 0) - (b.year ?? 0)
+      if (sortBy === 'rating' || sortBy === 'popular') return (b.rating ?? 0) - (a.rating ?? 0)
+      return 0 // relevance: keep IGDB order
+    })
+  }
+
+  return mapped
 }
 
 export async function getPopularGames(
   platform: string | null = null,
-  limit = 12
+  offset = 0,
+  sortBy: SortBy = 'rating',
+  genreId: number | null = null
 ): Promise<Game[]> {
-  return searchGames('', platform, limit)
+  return searchGames('', platform, sortBy, offset, genreId)
 }
 
 export async function getGameById(igdbId: number): Promise<Game | null> {
@@ -168,7 +215,7 @@ export async function getGameById(igdbId: number): Promise<Game | null> {
   const accessToken = await getAccessToken(clientId, clientSecret)
 
   const body = `fields id,name,platforms,first_release_date,summary,cover.image_id,
-                       screenshots.image_id,genres.name,involved_companies.company.name,rating;
+                       screenshots.image_id,videos.video_id,genres.name,involved_companies.company.name,rating;
                 where id = ${igdbId};
                 limit 1;`
 
@@ -185,6 +232,7 @@ export async function getGameById(igdbId: number): Promise<Game | null> {
     developers: (g.involved_companies ?? [])
       .map((ic) => ic.company?.name)
       .filter((name): name is string => Boolean(name)),
+    videos: (g.videos ?? []).map((v) => v.video_id),
   }
 }
 

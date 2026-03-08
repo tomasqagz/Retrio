@@ -124,8 +124,8 @@ export function startDownload({
 }
 
 export function cancelDownload(infoHash: string): void {
-  const torrent = getClient().get(infoHash)
-  if (torrent) {
+  const torrent = getClient().get(infoHash) as unknown as import('webtorrent').Torrent | undefined
+  if (torrent && typeof torrent.destroy === 'function') {
     offProgress(infoHash)
     torrent.destroy()
   }

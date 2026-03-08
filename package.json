@@ -5,7 +5,7 @@
   "main": "electron-main.cjs",
   "scripts": {
     "dev": "vite --config vite.config.ts",
-    "electron": "tsc -p tsconfig.preload.json && electron .",
+    "electron": "tsc -p tsconfig.preload.json && tsc -p tsconfig.node.json && node scripts/launch-electron.cjs",
     "dev:electron": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && npm run electron\"",
     "build": "tsc -p tsconfig.node.json && vite build --config vite.config.ts",
     "dist": "npm run build && electron-builder",
@@ -30,7 +30,7 @@
     "@types/webtorrent": "^0.110.1",
     "@vitejs/plugin-react": "^5.1.4",
     "concurrently": "^9.2.1",
-    "electron": "^40.8.0",
+    "electron": "^34.5.8",
     "electron-builder": "^26.8.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
