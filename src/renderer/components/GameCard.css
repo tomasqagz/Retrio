@@ -18,11 +18,15 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.3s ease;
+  transition: transform 0.25s ease;
+}
+
+.game-card:hover .game-card-cover {
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
 .game-card:hover .game-card-cover img {
-  transform: scale(1.04);
+  transform: scale(1.06);
 }
 
 .game-card-cover-placeholder {
@@ -70,13 +74,22 @@
   align-items: flex-end;
   justify-content: center;
   padding-bottom: 16px;
-  background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%);
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.15) 60%, transparent 100%);
   opacity: 0;
   transition: opacity 0.2s;
 }
 
 .game-card:hover .game-card-hover-overlay {
   opacity: 1;
+}
+
+.game-card-hint {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  pointer-events: none;
 }
 
 .game-card-action-btn {

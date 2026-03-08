@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { Emulator } from '../../shared/types'
+import { toast } from '../components/Toaster'
 import './Settings.css'
 
 const IS_ELECTRON = Boolean(window.retrio)
@@ -14,20 +15,22 @@ export default function Settings() {
     void window.retrio.getEmulatorStatus().then(setEmulators)
   }, [])
 
-  async function handleInstall(id: string) {
+  async function handleInstall(id: string, name: string) {
     if (!IS_ELECTRON) return
     setEmulators((prev) =>
       prev.map((e) => (e.id === id ? { ...e, status: 'installing' as const } : e))
     )
+    toast(`Descargando ${name}… puede tardar varios minutos`, 'info')
     try {
       await window.retrio.installEmulator(id)
       const updated = await window.retrio.getEmulatorStatus()
       setEmulators(updated)
-    } catch {
-      // Revert to not_installed if winget failed
+      toast(`${name} instalado correctamente`, 'success')
+    } catch (err) {
       setEmulators((prev) =>
         prev.map((e) => (e.id === id ? { ...e, status: 'not_installed' as const } : e))
       )
+      toast(`Error instalando ${name}: ${err instanceof Error ? err.message : String(err)}`, 'error')
     }
   }
 
@@ -58,7 +61,7 @@ export default function Settings() {
                   <span className="status-badge status-badge--loading">Instalando...</span>
                 )}
                 {emu.status === 'not_installed' && (
-                  <button className="btn-install" onClick={() => void handleInstall(emu.id)}>
+                  <button className="btn-install" onClick={() => void handleInstall(emu.id, emu.name)}>
                     Instalar
                   </button>
                 )}

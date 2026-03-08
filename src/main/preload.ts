@@ -1,37 +1,48 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { RetrioAPI, DownloadProgress, Game } from '../shared/types'
+import type { RetrioAPI, DownloadProgress, EmulatorInstallProgress, Game } from '../shared/types'
 
 const api: RetrioAPI = {
   // IGDB
-  searchGames: (query, platform) =>
-    ipcRenderer.invoke('igdb:search', { query, platform }),
-  getPopularGames: (platform) =>
-    ipcRenderer.invoke('igdb:popular', { platform }),
+  searchGames: (query, platform, sortBy, offset, genreId) =>
+    ipcRenderer.invoke('igdb:search', { query, platform, sortBy, offset, genreId }),
+  getPopularGames: (platform, sortBy, offset, genreId) =>
+    ipcRenderer.invoke('igdb:popular', { platform, sortBy, offset, genreId }),
   getGameById: (id) =>
     ipcRenderer.invoke('igdb:game', { id }),
 
-  // Torrent
-  downloadGame: (magnetUri: string, game: Game) =>
-    ipcRenderer.invoke('torrent:download', { magnetUri, game }),
-  cancelDownload: (infoHash) =>
-    ipcRenderer.invoke('torrent:cancel', { infoHash }),
+  // Descarga (Archive.org)
+  downloadGame: (game: Game) =>
+    ipcRenderer.invoke('archive:download', { game }),
+  cancelDownload: (gameId: number) =>
+    ipcRenderer.invoke('archive:cancel', { gameId }),
   onDownloadProgress: (callback: (data: DownloadProgress) => void) => {
-    ipcRenderer.on('torrent:progress', (_e, data: DownloadProgress) => callback(data))
+    const handler = (_e: unknown, data: DownloadProgress) => callback(data)
+    ipcRenderer.on('archive:progress', handler)
+    return () => ipcRenderer.removeListener('archive:progress', handler)
   },
   onDownloadDone: (callback: (data: { gameId: number; romPath: string }) => void) => {
-    ipcRenderer.on('torrent:done', (_e, data) => callback(data as { gameId: number; romPath: string }))
+    const handler = (_e: unknown, data: { gameId: number; romPath: string }) => callback(data)
+    ipcRenderer.on('archive:done', handler)
+    return () => ipcRenderer.removeListener('archive:done', handler)
   },
   onDownloadError: (callback: (data: { gameId: number; message: string }) => void) => {
-    ipcRenderer.on('torrent:error', (_e, data) => callback(data as { gameId: number; message: string }))
+    const handler = (_e: unknown, data: { gameId: number; message: string }) => callback(data)
+    ipcRenderer.on('archive:error', handler)
+    return () => ipcRenderer.removeListener('archive:error', handler)
   },
 
-  // Emuladores (próximamente)
+  // Emuladores
   launchGame: (romPath, platform) =>
     ipcRenderer.invoke('emulator:launch', { romPath, platform }),
   installEmulator: (name) =>
     ipcRenderer.invoke('emulator:install', { name }),
   getEmulatorStatus: () =>
     ipcRenderer.invoke('emulator:status'),
+  onEmulatorInstallProgress: (callback: (data: EmulatorInstallProgress) => void) => {
+    const handler = (_e: unknown, data: EmulatorInstallProgress) => callback(data)
+    ipcRenderer.on('emulator:install-progress', handler)
+    return () => ipcRenderer.removeListener('emulator:install-progress', handler)
+  },
 
   // Biblioteca SQLite
   getLibrary: () => ipcRenderer.invoke('library:get'),

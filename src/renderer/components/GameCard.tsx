@@ -6,10 +6,9 @@ const PLATFORM_COLORS: Record<Platform, string> = {
   NES: '#e53e3e',
   SNES: '#7b2d8b',
   'Sega Genesis': '#1a56db',
-  PS1: '#00439c',
-  PS2: '#00439c',
+  PS1: '#6b7280',
+  PS2: '#0ea5e9',
   N64: '#008a00',
-  PC: '#666',
   Desconocida: '#444',
 }
 
@@ -59,13 +58,7 @@ export default function GameCard({ game, onClick, onPlay, onDownload, onRemove }
               <span>Jugar</span>
             </button>
           ) : (
-            <button
-              className="game-card-action-btn game-card-action-btn--download"
-              onClick={(e) => handleActionClick(e, onDownload)}
-            >
-              <DownloadIcon />
-              <span>Descargar</span>
-            </button>
+            <span className="game-card-hint">Ver detalles</span>
           )}
           {onRemove && (
             <button

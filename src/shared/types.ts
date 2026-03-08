@@ -7,7 +7,6 @@ export type Platform =
   | 'PS1'
   | 'PS2'
   | 'N64'
-  | 'PC'
   | 'Desconocida'
 
 // ── Juego ─────────────────────────────────────────────────────────────────────
@@ -24,6 +23,7 @@ export interface Game {
   genres?: string[]
   developers?: string[]
   screenshots?: string[]
+  videos?: string[]
   // Estado local
   downloaded: boolean
   downloading: boolean
@@ -45,6 +45,12 @@ export interface Emulator {
 
 // ── Descarga ──────────────────────────────────────────────────────────────────
 
+export interface EmulatorInstallProgress {
+  emulatorId: string
+  received: number  // bytes
+  total: number     // bytes (0 si desconocido)
+}
+
 export interface DownloadProgress {
   infoHash: string
   gameId: number
@@ -53,25 +59,30 @@ export interface DownloadProgress {
   timeRemaining: number  // segundos
 }
 
+// ── Ordenamiento de búsqueda ──────────────────────────────────────────────────
+
+export type SortBy = 'relevance' | 'rating' | 'popular' | 'newest' | 'oldest'
+
 // ── API expuesta por el preload al renderer ───────────────────────────────────
 
 export interface RetrioAPI {
   // IGDB
-  searchGames: (query: string, platform: string | null) => Promise<Game[]>
-  getPopularGames: (platform: string | null) => Promise<Game[]>
+  searchGames: (query: string, platform: string | null, sortBy?: SortBy, offset?: number, genreId?: number | null) => Promise<Game[]>
+  getPopularGames: (platform: string | null, sortBy?: SortBy, offset?: number, genreId?: number | null) => Promise<Game[]>
   getGameById: (id: number) => Promise<Game | null>
 
-  // Torrent
-  downloadGame: (magnetUri: string, game: Game) => Promise<void>
-  cancelDownload: (infoHash: string) => Promise<void>
-  onDownloadProgress: (callback: (data: DownloadProgress) => void) => void
-  onDownloadDone: (callback: (data: { gameId: number; romPath: string }) => void) => void
-  onDownloadError: (callback: (data: { gameId: number; message: string }) => void) => void
+  // Descarga (Archive.org)
+  downloadGame: (game: Game) => Promise<void>
+  cancelDownload: (gameId: number) => Promise<void>
+  onDownloadProgress: (callback: (data: DownloadProgress) => void) => () => void
+  onDownloadDone: (callback: (data: { gameId: number; romPath: string }) => void) => () => void
+  onDownloadError: (callback: (data: { gameId: number; message: string }) => void) => () => void
 
   // Emuladores
   launchGame: (romPath: string, platform: Platform) => Promise<void>
   installEmulator: (name: string) => Promise<void>
   getEmulatorStatus: () => Promise<Emulator[]>
+  onEmulatorInstallProgress: (callback: (data: EmulatorInstallProgress) => void) => () => void
 
   // Biblioteca (SQLite)
   getLibrary: () => Promise<Game[]>

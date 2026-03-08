@@ -9,12 +9,13 @@ interface Toast {
 
 // Module-level singleton so toast() can be called from anywhere
 let _addToast: ((t: Toast) => void) | null = null
+let _nextId = 0
 
 export function toast(message: string, type: Toast['type'] = 'info') {
-  _addToast?.({ id: Date.now(), message, type })
+  _addToast?.({ id: _nextId++, message, type })
 }
 
-const DURATION = 4000
+const DURATION: Record<Toast['type'], number> = { success: 4000, info: 5000, error: 10000 }
 
 export default function Toaster() {
   const [toasts, setToasts] = useState<Toast[]>([])
@@ -24,7 +25,7 @@ export default function Toaster() {
       setToasts((prev) => [...prev, t])
       setTimeout(() => {
         setToasts((prev) => prev.filter((x) => x.id !== t.id))
-      }, DURATION)
+      }, DURATION[t.type])
     }
     return () => {
       _addToast = null

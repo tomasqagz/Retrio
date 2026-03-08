@@ -1,15 +1,15 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import type { Game, Platform } from '../../shared/types'
+import { confirm } from './ConfirmDialog'
 import './GameDetail.css'
 
 const PLATFORM_COLORS: Record<Platform, string> = {
   NES: '#e53e3e',
   SNES: '#7b2d8b',
   'Sega Genesis': '#1a56db',
-  PS1: '#00439c',
-  PS2: '#00439c',
+  PS1: '#6b7280',
+  PS2: '#0ea5e9',
   N64: '#008a00',
-  PC: '#666',
   Desconocida: '#444',
 }
 
@@ -32,12 +32,13 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
   const [loading, setLoading] = useState(true)
   const [inLibrary, setInLibrary] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [lightbox, setLightbox] = useState<{ type: 'image' | 'video'; src: string } | null>(null)
 
-  // Magnet link flow
-  const [showMagnet, setShowMagnet] = useState(false)
-  const [magnetUri, setMagnetUri] = useState('')
+  // Estado de descarga
   const [downloading, setDownloading] = useState(false)
+  const [progress, setProgress] = useState(0)
   const [downloadError, setDownloadError] = useState<string | null>(null)
+  const [searching, setSearching] = useState(false)
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -56,8 +57,32 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
 
     if (IS_ELECTRON) {
       void window.retrio.isInLibrary(game.id).then(setInLibrary)
+
+      const offProgress = window.retrio.onDownloadProgress((data) => {
+        if (data.gameId !== game.id) return
+        setSearching(false)
+        setDownloading(true)
+        setProgress(data.progress)
+      })
+
+      const offDone = window.retrio.onDownloadDone((data) => {
+        if (data.gameId !== game.id) return
+        setDownloading(false)
+        setProgress(100)
+        setInLibrary(true)
+        onClose()
+      })
+
+      const offError = window.retrio.onDownloadError((data) => {
+        if (data.gameId !== game.id) return
+        setDownloading(false)
+        setSearching(false)
+        setDownloadError(data.message)
+      })
+
+      return () => { offProgress(); offDone(); offError() }
     }
-  }, [game.id])
+  }, [game.id, onClose])
 
   const handleAddToLibrary = useCallback(async () => {
     if (!IS_ELECTRON) return
@@ -70,29 +95,99 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
 
   const handleRemoveFromLibrary = useCallback(async () => {
     if (!IS_ELECTRON) return
+    if (!await confirm(`¿Eliminar "${game.title}" de la biblioteca?`)) return
     setSaving(true)
     await window.retrio.removeFromLibrary(game.id)
     setInLibrary(false)
     setSaving(false)
-  }, [game.id])
+  }, [game.id, game.title])
 
-  const handleStartDownload = useCallback(async () => {
-    if (!magnetUri.trim().startsWith('magnet:')) {
-      setDownloadError('El link debe empezar con magnet:')
-      return
-    }
+  const handleDownload = useCallback(async () => {
+    if (!IS_ELECTRON) return
     setDownloadError(null)
-    setDownloading(true)
+    setSearching(true)
     const gameToDownload = detail ?? game
-    await window.retrio.downloadGame(magnetUri.trim(), {
+    await window.retrio.downloadGame({
       ...gameToDownload,
       downloaded: false,
       downloading: true,
       progress: 0,
     })
-    setInLibrary(true)
-    onClose()
-  }, [magnetUri, detail, game, onClose])
+  }, [detail, game])
+
+  const handleCancel = useCallback(async () => {
+    if (!IS_ELECTRON) return
+    await window.retrio.cancelDownload(game.id)
+    setDownloading(false)
+    setSearching(false)
+    setProgress(0)
+  }, [game.id])
+
+  const mediaRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const el = mediaRef.current
+    if (!el) return
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      el.scrollLeft += e.deltaY + e.deltaX
+    }
+
+    let startX = 0
+    let startScroll = 0
+    let dragging = false
+    let hasDragged = false
+
+    const onMouseDown = (e: MouseEvent) => {
+      dragging = true
+      hasDragged = false
+      startX = e.clientX
+      startScroll = el.scrollLeft
+      el.style.cursor = 'grabbing'
+    }
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!dragging) return
+      if (e.buttons === 0) {
+        dragging = false
+        el.style.cursor = 'grab'
+        return
+      }
+      const dx = e.clientX - startX
+      if (Math.abs(dx) > 4) hasDragged = true
+      el.scrollLeft = startScroll - dx
+    }
+
+    const onMouseUp = () => {
+      dragging = false
+      el.style.cursor = 'grab'
+      setTimeout(() => { hasDragged = false }, 0)
+    }
+
+    // Bloquea el click si fue un drag (en capture para interceptar antes que React)
+    const onClickCapture = (e: MouseEvent) => {
+      if (hasDragged) e.stopPropagation()
+    }
+
+    const onDragStart = (e: DragEvent) => e.preventDefault()
+
+    el.addEventListener('wheel', onWheel, { passive: false })
+    el.addEventListener('mousedown', onMouseDown)
+    el.addEventListener('dragstart', onDragStart)
+    document.addEventListener('click', onClickCapture, { capture: true })
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+
+    return () => {
+      el.removeEventListener('wheel', onWheel)
+      el.removeEventListener('mousedown', onMouseDown)
+      el.removeEventListener('dragstart', onDragStart)
+      document.removeEventListener('click', onClickCapture, { capture: true })
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [detail])
 
   const data = detail ?? game
   const platformColor = PLATFORM_COLORS[data.platform] ?? '#555'
@@ -139,56 +234,51 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
               </p>
             )}
 
-            {/* Magnet input */}
-            {showMagnet && (
-              <div className="magnet-input-area">
-                <p className="magnet-hint">
-                  Pegá el magnet link de la ROM (desde Archive.org u otra fuente verificada)
-                </p>
-                <div className="magnet-input-row">
-                  <input
-                    className="magnet-input"
-                    type="text"
-                    placeholder="magnet:?xt=urn:btih:..."
-                    value={magnetUri}
-                    onChange={(e) => setMagnetUri(e.target.value)}
-                    autoFocus
-                  />
-                  <button
-                    className="btn-action btn-action--confirm"
-                    onClick={() => void handleStartDownload()}
-                    disabled={downloading || !magnetUri.trim()}
-                  >
-                    {downloading ? 'Iniciando...' : 'Descargar'}
-                  </button>
-                  <button
-                    className="btn-action btn-action--ghost"
-                    onClick={() => { setShowMagnet(false); setMagnetUri(''); setDownloadError(null) }}
-                  >
-                    Cancelar
-                  </button>
-                </div>
-                {downloadError && (
-                  <p className="magnet-error">{downloadError}</p>
+            {/* Progreso de descarga */}
+            {(searching || downloading) && (
+              <div className="download-progress-area">
+                {searching && (
+                  <p className="download-status">Buscando en Archive.org...</p>
                 )}
+                {downloading && (
+                  <>
+                    <p className="download-status">Descargando... {progress}%</p>
+                    <div className="download-progress-bar">
+                      <div
+                        className="download-progress-fill"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </>
+                )}
+                <button
+                  className="btn-action btn-action--ghost"
+                  onClick={() => void handleCancel()}
+                >
+                  Cancelar
+                </button>
               </div>
             )}
 
+            {downloadError && (
+              <p className="download-error">{downloadError}</p>
+            )}
+
             <div className="game-detail-actions">
-              {data.downloaded ? (
+              {game.downloaded ? (
                 <button className="btn-action btn-action--play">
                   <PlayIcon /> Jugar
                 </button>
-              ) : IS_ELECTRON && !showMagnet ? (
+              ) : IS_ELECTRON && !downloading && !searching ? (
                 <button
                   className="btn-action btn-action--download"
-                  onClick={() => setShowMagnet(true)}
+                  onClick={() => void handleDownload()}
                 >
                   <DownloadIcon /> Descargar
                 </button>
               ) : null}
 
-              {IS_ELECTRON && !showMagnet && (
+              {IS_ELECTRON && !downloading && !searching && (
                 inLibrary ? (
                   <button
                     className="btn-action btn-action--remove"
@@ -210,6 +300,54 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
             </div>
           </div>
         </div>
+
+        {detail && (detail.videos?.length || detail.screenshots?.length) ? (
+          <div
+            className="game-detail-media"
+            ref={mediaRef}
+          >
+            {detail.videos?.map((videoId, i) => (
+              <button
+                key={i}
+                className="game-detail-media-video-thumb"
+                onClick={() => setLightbox({ type: 'video', src: videoId })}
+              >
+                <img
+                  src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
+                  alt="Trailer"
+                />
+                <span className="game-detail-media-play">▶</span>
+              </button>
+            ))}
+            {detail.screenshots?.map((src, i) => (
+              <img
+                key={i}
+                src={src}
+                alt={`Screenshot ${i + 1}`}
+                loading="lazy"
+                className="game-detail-media-shot"
+                onClick={() => setLightbox({ type: 'image', src })}
+              />
+            ))}
+          </div>
+        ) : null}
+
+        {lightbox && (
+          <div className="game-detail-lightbox" onClick={() => setLightbox(null)}>
+            {lightbox.type === 'image' ? (
+              <img src={lightbox.src} alt="Screenshot" onClick={(e) => e.stopPropagation()} />
+            ) : (
+              <div className="game-detail-lightbox-video" onClick={(e) => e.stopPropagation()}>
+                <iframe
+                  src={`https://www.youtube.com/embed/${lightbox.src}?rel=0&autoplay=1`}
+                  title="Trailer"
+                  allow="autoplay; encrypted-media"
+                  allowFullScreen
+                />
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

@@ -1,10 +1,23 @@
 import { useState, useEffect, useCallback } from 'react'
 import GameCard from '../components/GameCard'
 import GameDetail from '../components/GameDetail'
-import type { Game } from '../../shared/types'
+import { toast } from '../components/Toaster'
+import { confirm } from '../components/ConfirmDialog'
+import type { Game, Platform } from '../../shared/types'
 import './Library.css'
 
 type SortKey = 'recent' | 'title' | 'year'
+
+const PLATFORMS: Array<Platform | 'Todas'> = ['Todas', 'NES', 'SNES', 'N64', 'Sega Genesis', 'PS1', 'PS2']
+
+const PLATFORM_COLORS: Partial<Record<Platform, string>> = {
+  NES: '#e53e3e',
+  SNES: '#7b2d8b',
+  'Sega Genesis': '#1a56db',
+  PS1: '#6b7280',
+  PS2: '#0ea5e9',
+  N64: '#008a00',
+}
 
 const IS_ELECTRON = Boolean(window.retrio)
 
@@ -12,6 +25,8 @@ export default function Library() {
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(IS_ELECTRON)
   const [sortBy, setSortBy] = useState<SortKey>('recent')
+  const [platform, setPlatform] = useState<Platform | 'Todas'>('Todas')
+  const [query, setQuery] = useState('')
   const [selectedGame, setSelectedGame] = useState<Game | null>(null)
 
   const loadLibrary = useCallback(async () => {
@@ -32,7 +47,7 @@ export default function Library() {
   useEffect(() => {
     if (!IS_ELECTRON) return
 
-    window.retrio.onDownloadProgress((data) => {
+    const offProgress = window.retrio.onDownloadProgress((data) => {
       setGames((prev) =>
         prev.map((g) =>
           g.id === data.gameId ? { ...g, progress: data.progress, downloading: true } : g
@@ -40,7 +55,7 @@ export default function Library() {
       )
     })
 
-    window.retrio.onDownloadDone((data) => {
+    const offDone = window.retrio.onDownloadDone((data) => {
       setGames((prev) =>
         prev.map((g) =>
           g.id === data.gameId
@@ -50,33 +65,46 @@ export default function Library() {
       )
     })
 
-    window.retrio.onDownloadError((data) => {
+    const offError = window.retrio.onDownloadError((data) => {
       setGames((prev) =>
         prev.map((g) =>
           g.id === data.gameId ? { ...g, downloading: false, progress: 0 } : g
         )
       )
     })
+
+    return () => { offProgress(); offDone(); offError() }
   }, [])
 
   async function handleRemove(game: Game) {
     if (!IS_ELECTRON) return
+    if (!await confirm(`¿Eliminar "${game.title}" de la biblioteca?`)) return
     await window.retrio.removeFromLibrary(game.id)
     setGames((prev) => prev.filter((g) => g.id !== game.id))
   }
 
   async function handlePlay(game: Game) {
     if (!IS_ELECTRON || !game.romPath) {
-      alert(`Lanzando ${game.title}... (próximamente)`)
+      toast('ROM no encontrada', 'error')
       return
     }
-    await window.retrio.launchGame(game.romPath, game.platform)
+    try {
+      await window.retrio.launchGame(game.romPath, game.platform)
+    } catch (err) {
+      const raw = err instanceof Error ? err.message : 'Error al lanzar el juego'
+      const msg = raw.includes(': Error: ') ? raw.split(': Error: ').pop()! : raw
+      toast(msg, 'error')
+    }
   }
 
   const downloading = games.filter((g) => g.downloading)
 
   const sorted = games
-    .filter((g) => !g.downloading)
+    .filter((g) =>
+      !g.downloading &&
+      (platform === 'Todas' || g.platform === platform) &&
+      (!query || g.title.toLowerCase().includes(query.toLowerCase()))
+    )
     .sort((a, b) => {
       if (sortBy === 'title') return a.title.localeCompare(b.title)
       if (sortBy === 'year') return (b.year ?? 0) - (a.year ?? 0)
@@ -102,6 +130,18 @@ export default function Library() {
             <span className="library-count">{games.length}</span>
           )}
         </h1>
+        <div className="library-search">
+          <input
+            type="text"
+            className="library-search-input"
+            placeholder="Buscar en biblioteca..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          {query && (
+            <button className="library-search-clear" onClick={() => setQuery('')}>✕</button>
+          )}
+        </div>
         <div className="library-sort">
           <label htmlFor="sort-select" className="sort-label">Ordenar por</label>
           <select
@@ -110,11 +150,27 @@ export default function Library() {
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortKey)}
           >
-            <option value="recent">Recientes</option>
+            <option value="recent">Últimos descargados</option>
             <option value="title">Título</option>
             <option value="year">Año</option>
           </select>
         </div>
+      </div>
+
+      <div className="library-platforms">
+        {PLATFORMS.map((p) => {
+          const color = p !== 'Todas' ? PLATFORM_COLORS[p] : undefined
+          return (
+            <button
+              key={p}
+              className={`filter-chip ${platform === p ? 'filter-chip--active' : ''}`}
+              onClick={() => setPlatform(p)}
+            >
+              {color && <span className="filter-chip-dot" style={{ background: color }} />}
+              {p}
+            </button>
+          )
+        })}
       </div>
 
       {downloading.length > 0 && (

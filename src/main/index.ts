@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import { app, BrowserWindow, shell, ipcMain } from 'electron'
 import path from 'path'
+import fs from 'fs'
 import { searchGames, getPopularGames, getGameById } from './igdb'
 import {
   getLibrary,
@@ -9,11 +10,12 @@ import {
   removeFromLibrary,
   isInLibrary,
 } from './database'
-import { startDownload, cancelDownload, destroyClient } from './torrent'
+import { startArchiveDownload, cancelArchiveDownload } from './archiveorg'
+import { destroyClient } from './torrent'
 import { getEmulatorStatus, installEmulator, launchGame } from './emulator'
-import type { Game, DownloadProgress, Platform } from '../shared/types'
+import type { Game, Platform } from '../shared/types'
 
-const isDev = !app.isPackaged
+const isDev = !!(process as NodeJS.Process & { defaultApp?: boolean }).defaultApp
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -24,7 +26,9 @@ function createWindow(): void {
     backgroundColor: '#0f0f13',
     titleBarStyle: 'hiddenInset',
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: isDev
+        ? path.join(process.cwd(), 'dist/preload/main/preload.js')
+        : path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
@@ -46,12 +50,12 @@ function createWindow(): void {
 
 // ── IPC Handlers ──────────────────────────────────────────────────────────────
 
-ipcMain.handle('igdb:search', async (_e, { query, platform }: { query: string; platform: string | null }) => {
-  return searchGames(query, platform)
+ipcMain.handle('igdb:search', async (_e, { query, platform, sortBy, offset, genreId }: { query: string; platform: string | null; sortBy?: import('../shared/types').SortBy; offset?: number; genreId?: number | null }) => {
+  return searchGames(query, platform, sortBy, offset, genreId)
 })
 
-ipcMain.handle('igdb:popular', async (_e, { platform }: { platform?: string | null } = {}) => {
-  return getPopularGames(platform ?? null)
+ipcMain.handle('igdb:popular', async (_e, { platform, sortBy, offset, genreId }: { platform?: string | null; sortBy?: import('../shared/types').SortBy; offset?: number; genreId?: number | null } = {}) => {
+  return getPopularGames(platform ?? null, offset, sortBy, genreId)
 })
 
 ipcMain.handle('igdb:game', async (_e, { id }: { id: number }) => {
@@ -74,34 +78,36 @@ ipcMain.handle('library:add', (_e, game: Game) => {
 
 ipcMain.handle('library:remove', (_e, { id }: { id: number }) => {
   removeFromLibrary(id)
+  const gameDir = path.join(app.getPath('userData'), 'roms', String(id))
+  if (fs.existsSync(gameDir)) fs.rmSync(gameDir, { recursive: true, force: true })
 })
 
 ipcMain.handle('library:has', (_e, { id }: { id: number }) => {
   return isInLibrary(id)
 })
 
-// ── Torrent IPC ───────────────────────────────────────────────────────────────
+// ── Archive.org IPC ───────────────────────────────────────────────────────────
 
-ipcMain.handle('torrent:download', (_e, { magnetUri, game }: { magnetUri: string; game: Game }) => {
+ipcMain.handle('archive:download', (_e, { game }: { game: Game }) => {
   const win = BrowserWindow.getAllWindows()[0]
 
-  startDownload({
-    magnetUri,
+  void startArchiveDownload({
     game,
-    onProgress: (data: DownloadProgress) => {
-      win?.webContents.send('torrent:progress', data)
+    onProgress: (data) => {
+      win?.webContents.send('archive:progress', data)
     },
     onDone: (romPath: string) => {
-      win?.webContents.send('torrent:done', { gameId: game.id, romPath })
+      win?.webContents.send('archive:done', { gameId: game.id, romPath })
     },
     onError: (err: Error) => {
-      win?.webContents.send('torrent:error', { gameId: game.id, message: err.message })
+      win?.webContents.send('archive:error', { gameId: game.id, message: err.message })
     },
   })
 })
 
-ipcMain.handle('torrent:cancel', (_e, { infoHash }: { infoHash: string }) => {
-  cancelDownload(infoHash)
+ipcMain.handle('archive:cancel', (_e, { gameId }: { gameId: number }) => {
+  cancelArchiveDownload(gameId)
+  removeFromLibrary(gameId)
 })
 
 // ── Emulator IPC ──────────────────────────────────────────────────────────────
@@ -111,7 +117,10 @@ ipcMain.handle('emulator:status', () => {
 })
 
 ipcMain.handle('emulator:install', async (_e, { name }: { name: string }) => {
-  await installEmulator(name)
+  const win = BrowserWindow.getAllWindows()[0]
+  await installEmulator(name, (received, total) => {
+    win?.webContents.send('emulator:install-progress', { emulatorId: name, received, total })
+  })
 })
 
 ipcMain.handle('emulator:launch', (_e, { romPath, platform }: { romPath: string; platform: Platform }) => {
