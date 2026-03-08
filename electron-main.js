@@ -1,0 +1,5 @@
+const e = require('electron')
+const em = require('electron/main')
+console.log('is electron v' + process.versions.electron)
+console.log('electron:', typeof e, typeof e === 'string' ? e.slice(0,40) : JSON.stringify(Object.keys(e).slice(0,4)))
+console.log('electron/main:', typeof em, typeof em === 'object' ? JSON.stringify(Object.keys(em).slice(0,4)) : em)
