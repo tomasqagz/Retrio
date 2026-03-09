@@ -7,12 +7,16 @@ const IS_ELECTRON = Boolean(window.retrio)
 
 export default function Settings() {
   const [emulators, setEmulators] = useState<Emulator[]>([])
-  const [romsPath, setRomsPath] = useState('~/Retrio/roms')
-  const [emulatorsPath, setEmulatorsPath] = useState('~/Retrio/emulators')
+  const [romsPath, setRomsPath] = useState('')
+  const [emulatorsPath, setEmulatorsPath] = useState('')
 
   useEffect(() => {
     if (!IS_ELECTRON) return
     void window.retrio.getEmulatorStatus().then(setEmulators)
+    void window.retrio.getFolderDefaults().then(({ roms, emulators: emuPath }) => {
+      setRomsPath(roms)
+      setEmulatorsPath(emuPath)
+    })
   }, [])
 
   async function handleInstall(id: string, name: string) {
@@ -82,7 +86,7 @@ export default function Settings() {
               value={romsPath}
               onChange={(e) => setRomsPath(e.target.value)}
             />
-            <button className="btn-browse">Examinar</button>
+            <button className="btn-browse" onClick={() => void window.retrio.openFolder(romsPath)}>Examinar</button>
           </div>
         </div>
         <div className="path-row">
@@ -94,7 +98,7 @@ export default function Settings() {
               value={emulatorsPath}
               onChange={(e) => setEmulatorsPath(e.target.value)}
             />
-            <button className="btn-browse">Examinar</button>
+            <button className="btn-browse" onClick={() => void window.retrio.openFolder(emulatorsPath)}>Examinar</button>
           </div>
         </div>
       </section>

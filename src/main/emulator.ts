@@ -60,7 +60,11 @@ const EMULATOR_CONFIGS: EmulatorConfig[] = [
     id: 'pcsx2',
     name: 'PCSX2',
     platforms: ['PS2'],
-    install: { method: 'winget', id: 'PCSX2.PCSX2' },
+    install: {
+      method: 'github',
+      repo: 'PCSX2/pcsx2',
+      assetPattern: /pcsx2.*windows.*x64-Qt\.7z$/i,
+    },
     exeName: 'pcsx2-qt',
     buildArgs: (romPath) => [romPath],
   },
@@ -137,8 +141,9 @@ function installViaWinget(wingetId: string): Promise<void> {
     )
     proc.on('close', (code) => {
       // Treat 0 as success. Also treat known "soft" codes as success:
-      // 2316632107 (0x8A15002B) = package already installed / no upgrade applicable
-      const softCodes = new Set([0, 2316632107])
+      // 0x8A15002B (2316632107) = package already installed / no upgrade applicable
+      // 0x8A150014 (2316632084) = no applicable installer found / install blocked (app in use / needs reboot)
+      const softCodes = new Set([0, 2316632107, 2316632084])
       if (softCodes.has(code ?? -1)) resolve()
       else reject(new Error(`winget finalizó con código ${code}`))
     })
@@ -193,12 +198,66 @@ function downloadZip(url: string, dest: string, onProgress?: (received: number, 
   })
 }
 
-function extractZip(zipPath: string, destDir: string): Promise<void> {
+type ArchiveTool = { exe: string; args: (src: string, dest: string) => string[] }
+
+function findArchiveTool(): ArchiveTool | null {
+  // 7-Zip
+  const sevenZipCandidates = [
+    'C:\\Program Files\\7-Zip\\7z.exe',
+    'C:\\Program Files (x86)\\7-Zip\\7z.exe',
+  ]
+  for (const p of sevenZipCandidates) {
+    if (fs.existsSync(p)) return { exe: p, args: (src, dest) => ['x', src, `-o${dest}`, '-y'] }
+  }
+  try {
+    const result = execSync('where 7z', { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+    const first = result.split(/\r?\n/)[0].trim()
+    if (first) return { exe: first, args: (src, dest) => ['x', src, `-o${dest}`, '-y'] }
+  } catch { /* not in PATH */ }
+
+  // WinRAR
+  const winRarCandidates = [
+    'C:\\Program Files\\WinRAR\\WinRAR.exe',
+    'C:\\Program Files (x86)\\WinRAR\\WinRAR.exe',
+  ]
+  for (const p of winRarCandidates) {
+    if (fs.existsSync(p)) return { exe: p, args: (src, dest) => ['x', '-y', src, `${dest}\\`] }
+  }
+  try {
+    const result = execSync('where WinRAR', { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+    const first = result.split(/\r?\n/)[0].trim()
+    if (first) return { exe: first, args: (src, dest) => ['x', '-y', src, `${dest}\\`] }
+  } catch { /* not in PATH */ }
+
+  return null
+}
+
+function extractArchive(archivePath: string, destDir: string): Promise<void> {
+  const ext = path.extname(archivePath).toLowerCase()
+
+  if (ext === '.7z') {
+    const tool = findArchiveTool()
+    if (!tool) {
+      return Promise.reject(new Error(
+        'Se requiere 7-Zip o WinRAR para extraer este emulador. Instala 7-Zip desde https://www.7-zip.org/',
+      ))
+    }
+    return new Promise((resolve, reject) => {
+      const proc = spawn(tool.exe, tool.args(archivePath, destDir), { stdio: 'ignore' })
+      proc.on('close', (code) => {
+        if (code === 0) resolve()
+        else reject(new Error(`Extracción finalizó con código ${code}`))
+      })
+      proc.on('error', reject)
+    })
+  }
+
+  // Default: ZIP via PowerShell
   return new Promise((resolve, reject) => {
     const proc = spawn(
       'powershell',
       ['-NoProfile', '-Command',
-       `Expand-Archive -Path '${zipPath}' -DestinationPath '${destDir}' -Force`],
+       `Expand-Archive -Path '${archivePath}' -DestinationPath '${destDir}' -Force`],
       { shell: false, stdio: 'ignore' },
     )
     proc.on('close', (code) => {
@@ -224,10 +283,10 @@ async function installViaGithub(repo: string, assetPattern: RegExp, emuId: strin
   const destDir = path.join(getEmulatorsDir(), emuId)
   if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true })
 
-  const zipPath = path.join(destDir, asset.name)
-  await downloadZip(asset.browser_download_url, zipPath, onProgress)
-  await extractZip(zipPath, destDir)
-  fs.unlink(zipPath, () => {})
+  const archivePath = path.join(destDir, asset.name)
+  await downloadZip(asset.browser_download_url, archivePath, onProgress)
+  await extractArchive(archivePath, destDir)
+  fs.unlink(archivePath, () => {})
 }
 
 // ── API pública ───────────────────────────────────────────────────────────────
@@ -256,6 +315,11 @@ export async function installEmulator(id: string, onProgress?: (received: number
       // Winget may return a non-zero code even when the package ends up installed
       // (e.g. already installed, update not applicable). If the exe is now findable, treat as success.
       if (!findExe(cfg.exeName, cfg.id)) throw err
+      return
+    }
+    // Even on a "success" code, verify the exe is actually present.
+    if (!findExe(cfg.exeName, cfg.id)) {
+      throw new Error(`winget reportó éxito pero no se encontró ${cfg.exeName}.exe. Es posible que la instalación requiera reiniciar o que se instaló en una ruta no estándar.`)
     }
   } else {
     await installViaGithub(cfg.install.repo, cfg.install.assetPattern, cfg.id, onProgress)
