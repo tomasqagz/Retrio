@@ -44,6 +44,10 @@ const api: RetrioAPI = {
     return () => ipcRenderer.removeListener('emulator:install-progress', handler)
   },
 
+  // Carpetas
+  openFolder: (folderPath: string) => ipcRenderer.invoke('folder:open', { path: folderPath }),
+  getFolderDefaults: () => ipcRenderer.invoke('folder:get-defaults'),
+
   // Biblioteca SQLite
   getLibrary: () => ipcRenderer.invoke('library:get'),
   addToLibrary: (game) => ipcRenderer.invoke('library:add', game),

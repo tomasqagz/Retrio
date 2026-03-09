@@ -62,6 +62,18 @@ ipcMain.handle('igdb:game', async (_e, { id }: { id: number }) => {
   return getGameById(id)
 })
 
+// ── Folder IPC ────────────────────────────────────────────────────────────────
+
+ipcMain.handle('folder:open', async (_e, { path: folderPath }: { path: string }) => {
+  const err = await shell.openPath(folderPath)
+  if (err) throw new Error(err)
+})
+
+ipcMain.handle('folder:get-defaults', () => ({
+  roms: path.join(app.getPath('userData'), 'roms'),
+  emulators: path.join(app.getPath('userData'), 'emulators'),
+}))
+
 // ── Library IPC ───────────────────────────────────────────────────────────────
 
 ipcMain.handle('library:get', () => {

@@ -84,6 +84,10 @@ export interface RetrioAPI {
   getEmulatorStatus: () => Promise<Emulator[]>
   onEmulatorInstallProgress: (callback: (data: EmulatorInstallProgress) => void) => () => void
 
+  // Carpetas
+  openFolder: (path: string) => Promise<void>
+  getFolderDefaults: () => Promise<{ roms: string; emulators: string }>
+
   // Biblioteca (SQLite)
   getLibrary: () => Promise<Game[]>
   addToLibrary: (game: Game) => Promise<void>
