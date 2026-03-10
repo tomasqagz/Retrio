@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Game, Platform } from '../../shared/types'
 import './GameCard.css'
 
@@ -6,6 +7,7 @@ const PLATFORM_COLORS: Record<Platform, string> = {
   NES: '#e53e3e',
   SNES: '#7b2d8b',
   'Sega Genesis': '#1a56db',
+  'Sega Saturn':  '#ec4899',
   PS1: '#6b7280',
   PS2: '#0ea5e9',
   N64: '#008a00',
@@ -16,11 +18,14 @@ interface GameCardProps {
   game: Game
   onClick?: (game: Game) => void
   onPlay?: (game: Game) => void
-  onDownload?: (game: Game) => void
   onRemove?: (game: Game) => void
+  onAdd?: (game: Game) => void
+  inLibrary?: boolean
+  grayscale?: boolean
 }
 
-export default function GameCard({ game, onClick, onPlay, onDownload, onRemove }: GameCardProps) {
+export default function GameCard({ game, onClick, onPlay, onRemove, onAdd, inLibrary, grayscale }: GameCardProps) {
+  const { t } = useTranslation()
   const { title, platform, coverUrl, year, rating, downloaded, downloading, progress } = game
   const platformColor = PLATFORM_COLORS[platform] ?? '#555'
 
@@ -31,7 +36,7 @@ export default function GameCard({ game, onClick, onPlay, onDownload, onRemove }
 
   return (
     <div className="game-card" onClick={() => onClick?.(game)}>
-      <div className="game-card-cover">
+      <div className={`game-card-cover${grayscale ? ' game-card-cover--grayscale' : ''}`}>
         {coverUrl ? (
           <img src={coverUrl} alt={title} loading="lazy" />
         ) : (
@@ -48,6 +53,16 @@ export default function GameCard({ game, onClick, onPlay, onDownload, onRemove }
           <div className="game-card-rating">★ {rating}</div>
         )}
 
+        {onAdd && (
+          <button
+            className={`game-card-add-btn ${inLibrary ? 'game-card-add-btn--added' : ''}`}
+            title={inLibrary ? t('gamecard.in_library') : t('gamecard.add_to_library')}
+            onClick={(e) => { e.stopPropagation(); if (!inLibrary) onAdd(game) }}
+          >
+            {inLibrary ? <CheckIcon /> : <span style={{ fontSize: '20px', lineHeight: 1, marginTop: '-1px' }}>+</span>}
+          </button>
+        )}
+
         <div className="game-card-hover-overlay">
           {downloaded ? (
             <button
@@ -55,21 +70,22 @@ export default function GameCard({ game, onClick, onPlay, onDownload, onRemove }
               onClick={(e) => handleActionClick(e, onPlay)}
             >
               <PlayIcon />
-              <span>Jugar</span>
+              <span>{t('gamecard.play')}</span>
             </button>
           ) : (
-            <span className="game-card-hint">Ver detalles</span>
-          )}
-          {onRemove && (
-            <button
-              className="game-card-remove-btn"
-              title="Quitar de la biblioteca"
-              onClick={(e) => handleActionClick(e, onRemove)}
-            >
-              <TrashIcon />
-            </button>
+            <span className="game-card-hint">{t('gamecard.view_details')}</span>
           )}
         </div>
+
+        {onRemove && (
+          <button
+            className="game-card-remove-btn"
+            title={t('gamecard.remove_hint')}
+            onClick={(e) => handleActionClick(e, onRemove)}
+          >
+            <TrashIcon />
+          </button>
+        )}
       </div>
 
       {downloading && (
@@ -105,12 +121,19 @@ function TrashIcon() {
   )
 }
 
-function DownloadIcon() {
+function BookmarkIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-      <polyline points="7 10 12 15 17 10" />
-      <line x1="12" y1="15" x2="12" y2="3" />
+      <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
     </svg>
   )
 }
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  )
+}
+

@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import GameCard from '../components/GameCard'
 import GameDetail from '../components/GameDetail'
+import AddLocalGameModal from '../components/AddLocalGameModal'
 import { toast } from '../components/Toaster'
 import { confirm } from '../components/ConfirmDialog'
 import type { Game, Platform } from '../../shared/types'
@@ -8,12 +10,13 @@ import './Library.css'
 
 type SortKey = 'recent' | 'title' | 'year'
 
-const PLATFORMS: Array<Platform | 'Todas'> = ['Todas', 'NES', 'SNES', 'N64', 'Sega Genesis', 'PS1', 'PS2']
+const PLATFORMS: Array<Platform | 'Todas'> = ['Todas', 'NES', 'SNES', 'N64', 'Sega Genesis', 'Sega Saturn', 'PS1', 'PS2']
 
 const PLATFORM_COLORS: Partial<Record<Platform, string>> = {
   NES: '#e53e3e',
   SNES: '#7b2d8b',
   'Sega Genesis': '#1a56db',
+  'Sega Saturn': '#ec4899',
   PS1: '#6b7280',
   PS2: '#0ea5e9',
   N64: '#008a00',
@@ -22,12 +25,15 @@ const PLATFORM_COLORS: Partial<Record<Platform, string>> = {
 const IS_ELECTRON = Boolean(window.retrio)
 
 export default function Library() {
+  const { t } = useTranslation()
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(IS_ELECTRON)
   const [sortBy, setSortBy] = useState<SortKey>('recent')
   const [platform, setPlatform] = useState<Platform | 'Todas'>('Todas')
   const [query, setQuery] = useState('')
   const [selectedGame, setSelectedGame] = useState<Game | null>(null)
+  const [localRomPath, setLocalRomPath] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'all' | 'installed' | 'wishlist'>('all')
 
   const loadLibrary = useCallback(async () => {
     if (!IS_ELECTRON) return
@@ -78,20 +84,32 @@ export default function Library() {
 
   async function handleRemove(game: Game) {
     if (!IS_ELECTRON) return
-    if (!await confirm(`¿Eliminar "${game.title}" de la biblioteca?`)) return
+    if (!await confirm(t('library.remove_confirm', { title: game.title }))) return
     await window.retrio.removeFromLibrary(game.id)
     setGames((prev) => prev.filter((g) => g.id !== game.id))
   }
 
+  async function handleAddLocal() {
+    if (!IS_ELECTRON) return
+    const filePath = await window.retrio.openRomDialog()
+    if (filePath) setLocalRomPath(filePath)
+  }
+
+  const handleDetailClose = useCallback(() => {
+    setSelectedGame(null)
+    void loadLibrary()
+  }, [loadLibrary])
+
   async function handlePlay(game: Game) {
     if (!IS_ELECTRON || !game.romPath) {
-      toast('ROM no encontrada', 'error')
+      toast(t('library.rom_not_found'), 'error')
       return
     }
+    if (!await confirm(t('library.play_confirm', { title: game.title }), { confirmLabel: t('gamecard.play'), danger: false })) return
     try {
       await window.retrio.launchGame(game.romPath, game.platform)
     } catch (err) {
-      const raw = err instanceof Error ? err.message : 'Error al lanzar el juego'
+      const raw = err instanceof Error ? err.message : t('library.launch_error')
       const msg = raw.includes(': Error: ') ? raw.split(': Error: ').pop()! : raw
       toast(msg, 'error')
     }
@@ -99,7 +117,7 @@ export default function Library() {
 
   const downloading = games.filter((g) => g.downloading)
 
-  const sorted = games
+  const filtered = games
     .filter((g) =>
       !g.downloading &&
       (platform === 'Todas' || g.platform === platform) &&
@@ -110,6 +128,14 @@ export default function Library() {
       if (sortBy === 'year') return (b.year ?? 0) - (a.year ?? 0)
       return b.id - a.id
     })
+
+  const installed = filtered.filter((g) => g.downloaded)
+  const wishlist = filtered.filter((g) => !g.downloaded)
+  const sorted = activeTab === 'installed' ? installed
+    : activeTab === 'wishlist' ? wishlist
+    : [...installed, ...wishlist]
+
+  const platformAllLabel = t('search.platform_all')
 
   if (loading) {
     return (
@@ -125,7 +151,7 @@ export default function Library() {
     <div className="page library-page">
       <div className="library-header">
         <h1 className="library-title">
-          Mi biblioteca
+          {t('library.title')}
           {games.length > 0 && (
             <span className="library-count">{games.length}</span>
           )}
@@ -134,7 +160,7 @@ export default function Library() {
           <input
             type="text"
             className="library-search-input"
-            placeholder="Buscar en biblioteca..."
+            placeholder={t('library.search_placeholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -142,24 +168,55 @@ export default function Library() {
             <button className="library-search-clear" onClick={() => setQuery('')}>✕</button>
           )}
         </div>
+        <button className="library-add-local" onClick={() => void handleAddLocal()} title={t('library.add_rom_title')}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="15" height="15">
+            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          {t('library.add_rom')}
+        </button>
         <div className="library-sort">
-          <label htmlFor="sort-select" className="sort-label">Ordenar por</label>
+          <label htmlFor="sort-select" className="sort-label">{t('library.sort_label')}</label>
           <select
             id="sort-select"
             className="sort-select"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortKey)}
           >
-            <option value="recent">Últimos descargados</option>
-            <option value="title">Título</option>
-            <option value="year">Año</option>
+            <option value="recent">{t('library.sort_recent')}</option>
+            <option value="title">{t('library.sort_title')}</option>
+            <option value="year">{t('library.sort_year')}</option>
           </select>
         </div>
       </div>
 
+      <div className="library-tabs">
+        <button
+          className={`library-tab ${activeTab === 'all' ? 'library-tab--active' : ''}`}
+          onClick={() => setActiveTab('all')}
+        >
+          {t('library.tab_all')}
+          {games.length > 0 && <span className="library-tab-count">{games.length}</span>}
+        </button>
+        <button
+          className={`library-tab ${activeTab === 'installed' ? 'library-tab--active' : ''}`}
+          onClick={() => setActiveTab('installed')}
+        >
+          {t('library.tab_installed')}
+          {installed.length > 0 && <span className="library-tab-count">{installed.length}</span>}
+        </button>
+        <button
+          className={`library-tab ${activeTab === 'wishlist' ? 'library-tab--active' : ''}`}
+          onClick={() => setActiveTab('wishlist')}
+        >
+          {t('library.tab_not_installed')}
+          {wishlist.length > 0 && <span className="library-tab-count">{wishlist.length}</span>}
+        </button>
+      </div>
+
       <div className="library-platforms">
         {PLATFORMS.map((p) => {
-          const color = p !== 'Todas' ? PLATFORM_COLORS[p] : undefined
+          const color = p !== 'Todas' ? PLATFORM_COLORS[p as Platform] : undefined
+          const label = p === 'Todas' ? platformAllLabel : p
           return (
             <button
               key={p}
@@ -167,7 +224,7 @@ export default function Library() {
               onClick={() => setPlatform(p)}
             >
               {color && <span className="filter-chip-dot" style={{ background: color }} />}
-              {p}
+              {label}
             </button>
           )
         })}
@@ -175,7 +232,7 @@ export default function Library() {
 
       {downloading.length > 0 && (
         <section className="library-section">
-          <h2 className="section-title">Descargando</h2>
+          <h2 className="section-title">{t('library.downloading')}</h2>
           <div className="games-grid">
             {downloading.map((game) => (
               <GameCard key={game.id} game={game} />
@@ -192,8 +249,9 @@ export default function Library() {
                 key={game.id}
                 game={game}
                 onClick={() => setSelectedGame(game)}
-                onPlay={handlePlay}
+                onPlay={game.downloaded ? handlePlay : undefined}
                 onRemove={handleRemove}
+                grayscale={!game.downloaded}
               />
             ))}
           </div>
@@ -201,19 +259,39 @@ export default function Library() {
       ) : (
         <div className="library-empty">
           <div className="library-empty-icon">📂</div>
-          <p className="library-empty-title">Tu biblioteca está vacía</p>
-          <p className="library-empty-sub">
-            Ve a Buscar para encontrar y añadir tu primer juego
-          </p>
+          {activeTab === 'installed' ? (
+            <>
+              <p className="library-empty-title">{t('library.empty_installed_title')}</p>
+              <p className="library-empty-sub">{t('library.empty_installed_sub')}</p>
+            </>
+          ) : activeTab === 'wishlist' ? (
+            <>
+              <p className="library-empty-title">{t('library.empty_wishlist_title')}</p>
+              <p className="library-empty-sub">{t('library.empty_wishlist_sub')}</p>
+            </>
+          ) : (
+            <>
+              <p className="library-empty-title">{t('library.empty_title')}</p>
+              <p className="library-empty-sub">{t('library.empty_sub')}</p>
+            </>
+          )}
         </div>
       )}
 
       {selectedGame && (
         <GameDetail
           game={selectedGame}
-          onClose={() => {
-            setSelectedGame(null)
-            void loadLibrary()
+          onClose={handleDetailClose}
+        />
+      )}
+
+      {localRomPath && (
+        <AddLocalGameModal
+          filePath={localRomPath}
+          onClose={() => setLocalRomPath(null)}
+          onAdded={(game) => {
+            setGames((prev) => [game, ...prev])
+            setLocalRomPath(null)
           }}
         />
       )}

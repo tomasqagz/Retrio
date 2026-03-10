@@ -37,9 +37,12 @@ function migrate(db: Database.Database): void {
       downloading INTEGER NOT NULL DEFAULT 0,
       progress    INTEGER NOT NULL DEFAULT 0,
       rom_path    TEXT,
+      dl_dismissed INTEGER NOT NULL DEFAULT 0,
       added_at    INTEGER NOT NULL DEFAULT (unixepoch())
     );
   `)
+  // Add dl_dismissed column if it doesn't exist (for existing databases)
+  try { db.exec(`ALTER TABLE games ADD COLUMN dl_dismissed INTEGER NOT NULL DEFAULT 0`) } catch { /* already exists */ }
   // Reset any downloads that were in progress when the app was last closed
   db.exec(`DELETE FROM games WHERE downloading = 1 AND downloaded = 0`)
 }
@@ -61,6 +64,7 @@ interface GameRow {
   downloading: number
   progress: number
   rom_path: string | null
+  dl_dismissed: number
   added_at: number
 }
 
@@ -80,6 +84,7 @@ function rowToGame(row: GameRow): Game {
     downloading: Boolean(row.downloading),
     progress: row.progress,
     romPath: row.rom_path ?? undefined,
+    dlDismissed: Boolean(row.dl_dismissed),
   }
 }
 
@@ -152,6 +157,10 @@ export function markAsDownloaded(id: number, romPath: string): void {
   getDb()
     .prepare('UPDATE games SET downloaded = 1, downloading = 0, progress = 100, rom_path = ? WHERE id = ?')
     .run(romPath, id)
+}
+
+export function dismissDownload(id: number): void {
+  getDb().prepare('UPDATE games SET dl_dismissed = 1 WHERE id = ?').run(id)
 }
 
 export function isInLibrary(id: number): boolean {

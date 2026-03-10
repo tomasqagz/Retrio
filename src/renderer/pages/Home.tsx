@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import type React from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import GameCard from '../components/GameCard'
 import GameDetail from '../components/GameDetail'
 import type { Game, Platform } from '../../shared/types'
+import { platformLabel } from '../utils/platform'
 import './Home.css'
 
 interface PlatformEntry {
@@ -15,6 +17,7 @@ const PLATFORMS: PlatformEntry[] = [
   { name: 'NES', color: '#e53e3e' },
   { name: 'SNES', color: '#7b2d8b' },
   { name: 'Sega Genesis', color: '#1a56db' },
+  { name: 'Sega Saturn', color: '#ec4899' },
   { name: 'PS1', color: '#00439c' },
   { name: 'PS2', color: '#00439c' },
   { name: 'N64', color: '#008a00' },
@@ -30,6 +33,7 @@ async function fetchPopular(): Promise<Game[]> {
 }
 
 export default function Home() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [popular, setPopular] = useState<Game[]>([])
   const [library, setLibrary] = useState<Game[]>([])
@@ -54,17 +58,15 @@ export default function Home() {
     <div className="page home-page">
       <div className="home-hero">
         <div className="home-hero-content">
-          <h1 className="home-hero-title">Tu biblioteca retro</h1>
-          <p className="home-hero-subtitle">
-            Busca, descarga y juega en segundos. Sin configurar nada.
-          </p>
+          <h1 className="home-hero-title">{t('home.hero_title')}</h1>
+          <p className="home-hero-subtitle">{t('home.hero_subtitle')}</p>
           <div className="home-hero-actions">
             <button className="btn-primary" onClick={() => navigate('/search')}>
-              Buscar juegos
+              {t('home.search_games')}
             </button>
             {recentLibrary.length > 0 && (
               <button className="btn-secondary" onClick={() => navigate('/library')}>
-                Mi biblioteca · {library.length}
+                {t('home.my_library')}
               </button>
             )}
           </div>
@@ -76,7 +78,7 @@ export default function Home() {
 
       <section className="home-section">
         <div className="section-header">
-          <h2 className="section-title">Consolas</h2>
+          <h2 className="section-title">{t('home.consoles')}</h2>
         </div>
         <div className="platforms-grid">
           {PLATFORMS.map((p) => (
@@ -87,7 +89,7 @@ export default function Home() {
               onClick={() => navigate(`/search?platform=${encodeURIComponent(p.name)}`)}
             >
               <span className="platform-chip-dot" />
-              <span className="platform-chip-name">{p.name}</span>
+              <span className="platform-chip-name">{platformLabel(p.name)}</span>
             </button>
           ))}
         </div>
@@ -96,9 +98,9 @@ export default function Home() {
       {recentLibrary.length > 0 && (
         <section className="home-section">
           <div className="section-header">
-            <h2 className="section-title">Últimos añadidos</h2>
+            <h2 className="section-title">{t('home.recent')}</h2>
             <button className="section-link" onClick={() => navigate('/library')}>
-              Ver biblioteca
+              {t('home.view_library')}
             </button>
           </div>
           <div className="games-grid">
@@ -115,9 +117,9 @@ export default function Home() {
 
       <section className="home-section">
         <div className="section-header">
-          <h2 className="section-title">Populares</h2>
+          <h2 className="section-title">{t('home.popular')}</h2>
           <button className="section-link" onClick={() => navigate('/search')}>
-            Ver todos
+            {t('home.view_all')}
           </button>
         </div>
         {loadingPopular ? (
@@ -131,7 +133,6 @@ export default function Home() {
                 key={game.id}
                 game={game}
                 onClick={() => setSelectedGame(game)}
-                onDownload={() => setSelectedGame(game)}
               />
             ))}
           </div>

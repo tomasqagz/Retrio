@@ -51,6 +51,7 @@ function igdbDevPlugin() {
 
 export default defineConfig({
   root: 'src/renderer',
+  publicDir: resolve(__dirname, 'public'),
   plugins: [react(), igdbDevPlugin()],
   server: {
     port: 5173,

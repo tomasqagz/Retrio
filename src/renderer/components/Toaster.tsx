@@ -23,9 +23,11 @@ export default function Toaster() {
   useEffect(() => {
     _addToast = (t) => {
       setToasts((prev) => [...prev, t])
-      setTimeout(() => {
-        setToasts((prev) => prev.filter((x) => x.id !== t.id))
-      }, DURATION[t.type])
+      if (t.type !== 'error') {
+        setTimeout(() => {
+          setToasts((prev) => prev.filter((x) => x.id !== t.id))
+        }, DURATION[t.type])
+      }
     }
     return () => {
       _addToast = null

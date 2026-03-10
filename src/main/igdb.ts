@@ -8,6 +8,7 @@ const PLATFORM_IDS: Record<Platform, number> = {
   NES: 18,
   SNES: 19,
   'Sega Genesis': 29,
+  'Sega Saturn':  32,
   PS1: 7,
   PS2: 8,
   N64: 4,
