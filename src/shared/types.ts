@@ -4,6 +4,7 @@ export type Platform =
   | 'NES'
   | 'SNES'
   | 'Sega Genesis'
+  | 'Sega Saturn'
   | 'PS1'
   | 'PS2'
   | 'N64'
@@ -29,6 +30,7 @@ export interface Game {
   downloading: boolean
   progress?: number
   romPath?: string
+  dlDismissed?: boolean
 }
 
 // ── Emuladores ────────────────────────────────────────────────────────────────
@@ -41,6 +43,16 @@ export interface Emulator {
   platforms: Platform[]
   status: EmulatorStatus
   version: string | null
+}
+
+// ── ROM picker ────────────────────────────────────────────────────────────────
+
+export interface RomOption {
+  identifier: string
+  files: string[]
+  primaryFile: string
+  size: number
+  label: string
 }
 
 // ── Descarga ──────────────────────────────────────────────────────────────────
@@ -72,7 +84,10 @@ export interface RetrioAPI {
   getGameById: (id: number) => Promise<Game | null>
 
   // Descarga (Archive.org)
-  downloadGame: (game: Game) => Promise<void>
+  findRoms: (game: Game) => Promise<RomOption[]>
+  downloadGame: (game: Game, romOption?: RomOption) => Promise<void>
+  pauseDownload: (gameId: number) => Promise<boolean>
+  resumeDownload: (gameId: number) => Promise<void>
   cancelDownload: (gameId: number) => Promise<void>
   onDownloadProgress: (callback: (data: DownloadProgress) => void) => () => void
   onDownloadDone: (callback: (data: { gameId: number; romPath: string }) => void) => () => void
@@ -80,19 +95,24 @@ export interface RetrioAPI {
 
   // Emuladores
   launchGame: (romPath: string, platform: Platform) => Promise<void>
+  setWindowSize: (width: number, height: number) => Promise<void>
   installEmulator: (name: string) => Promise<void>
+  openEmulator: (id: string) => Promise<void>
   getEmulatorStatus: () => Promise<Emulator[]>
+  deleteEmulator: (id: string) => Promise<void>
   onEmulatorInstallProgress: (callback: (data: EmulatorInstallProgress) => void) => () => void
 
-  // Carpetas
+  // Carpetas / Diálogos
+  openRomDialog: () => Promise<string | null>
   openFolder: (path: string) => Promise<void>
-  getFolderDefaults: () => Promise<{ roms: string; emulators: string }>
+  getFolderDefaults: () => Promise<{ roms: string; emulators: string; bios: string }>
 
   // Biblioteca (SQLite)
   getLibrary: () => Promise<Game[]>
   addToLibrary: (game: Game) => Promise<void>
   removeFromLibrary: (id: number) => Promise<void>
   isInLibrary: (id: number) => Promise<boolean>
+  dismissDownload: (id: number) => Promise<void>
 }
 
 // ── Extensión global de Window para el renderer ───────────────────────────────

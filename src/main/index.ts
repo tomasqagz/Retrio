@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { app, BrowserWindow, shell, ipcMain } from 'electron'
+import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { searchGames, getPopularGames, getGameById } from './igdb'
@@ -9,11 +9,12 @@ import {
   addToLibrary,
   removeFromLibrary,
   isInLibrary,
+  dismissDownload,
 } from './database'
-import { startArchiveDownload, cancelArchiveDownload } from './archiveorg'
+import { startArchiveDownload, pauseArchiveDownload, resumeArchiveDownload, cancelArchiveDownload, findRomsOnArchive } from './archiveorg'
 import { destroyClient } from './torrent'
-import { getEmulatorStatus, installEmulator, launchGame } from './emulator'
-import type { Game, Platform } from '../shared/types'
+import { getEmulatorStatus, installEmulator, launchGame, deleteEmulator, openEmulator } from './emulator'
+import type { Game, Platform, RomOption } from '../shared/types'
 
 const isDev = !!(process as NodeJS.Process & { defaultApp?: boolean }).defaultApp
 
@@ -24,7 +25,9 @@ function createWindow(): void {
     minWidth: 900,
     minHeight: 600,
     backgroundColor: '#0f0f13',
+    autoHideMenuBar: true,
     titleBarStyle: 'hiddenInset',
+    icon: path.join(process.cwd(), 'public/RetrioIcon.png'),
     webPreferences: {
       preload: isDev
         ? path.join(process.cwd(), 'dist/preload/main/preload.js')
@@ -64,7 +67,19 @@ ipcMain.handle('igdb:game', async (_e, { id }: { id: number }) => {
 
 // ── Folder IPC ────────────────────────────────────────────────────────────────
 
+ipcMain.handle('dialog:open-rom', async () => {
+  const { filePaths } = await dialog.showOpenDialog({
+    properties: ['openFile'],
+    filters: [
+      { name: 'ROMs', extensions: ['nes', 'smc', 'sfc', 'fig', 'md', 'gen', 'smd', 'n64', 'z64', 'v64', 'iso', 'bin', 'cue', 'img', 'mdf', 'chd'] },
+      { name: 'Todos los archivos', extensions: ['*'] },
+    ],
+  })
+  return filePaths[0] ?? null
+})
+
 ipcMain.handle('folder:open', async (_e, { path: folderPath }: { path: string }) => {
+  if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true })
   const err = await shell.openPath(folderPath)
   if (err) throw new Error(err)
 })
@@ -72,6 +87,7 @@ ipcMain.handle('folder:open', async (_e, { path: folderPath }: { path: string })
 ipcMain.handle('folder:get-defaults', () => ({
   roms: path.join(app.getPath('userData'), 'roms'),
   emulators: path.join(app.getPath('userData'), 'emulators'),
+  bios: path.join(app.getPath('userData'), 'emulators', 'bios'),
 }))
 
 // ── Library IPC ───────────────────────────────────────────────────────────────
@@ -98,13 +114,22 @@ ipcMain.handle('library:has', (_e, { id }: { id: number }) => {
   return isInLibrary(id)
 })
 
+ipcMain.handle('library:dismiss-download', (_e, { id }: { id: number }) => {
+  dismissDownload(id)
+})
+
 // ── Archive.org IPC ───────────────────────────────────────────────────────────
 
-ipcMain.handle('archive:download', (_e, { game }: { game: Game }) => {
+ipcMain.handle('archive:find-roms', async (_e, { game }: { game: Game }) => {
+  return findRomsOnArchive(game.title, game.platform)
+})
+
+ipcMain.handle('archive:download', (_e, { game, romOption }: { game: Game; romOption?: RomOption }) => {
   const win = BrowserWindow.getAllWindows()[0]
 
   void startArchiveDownload({
     game,
+    romOption,
     onProgress: (data) => {
       win?.webContents.send('archive:progress', data)
     },
@@ -114,6 +139,17 @@ ipcMain.handle('archive:download', (_e, { game }: { game: Game }) => {
     onError: (err: Error) => {
       win?.webContents.send('archive:error', { gameId: game.id, message: err.message })
     },
+  })
+})
+
+ipcMain.handle('archive:pause', (_e, { gameId }: { gameId: number }) => {
+  return pauseArchiveDownload(gameId)
+})
+
+ipcMain.handle('archive:resume', (_e, { gameId }: { gameId: number }) => {
+  const win = BrowserWindow.getAllWindows()[0]
+  void resumeArchiveDownload(gameId).catch((err: Error) => {
+    win?.webContents.send('archive:error', { gameId, message: err.message })
   })
 })
 
@@ -128,6 +164,10 @@ ipcMain.handle('emulator:status', () => {
   return getEmulatorStatus()
 })
 
+ipcMain.handle('emulator:open', (_e, { id }: { id: string }) => {
+  return openEmulator(id)
+})
+
 ipcMain.handle('emulator:install', async (_e, { name }: { name: string }) => {
   const win = BrowserWindow.getAllWindows()[0]
   await installEmulator(name, (received, total) => {
@@ -136,7 +176,17 @@ ipcMain.handle('emulator:install', async (_e, { name }: { name: string }) => {
 })
 
 ipcMain.handle('emulator:launch', (_e, { romPath, platform }: { romPath: string; platform: Platform }) => {
-  launchGame(romPath, platform)
+  return launchGame(romPath, platform)
+})
+
+ipcMain.handle('window:set-size', (_e, { width, height }: { width: number; height: number }) => {
+  const win = BrowserWindow.getAllWindows()[0]
+  win?.setSize(width, height, true)
+  win?.center()
+})
+
+ipcMain.handle('emulator:delete', (_e, { id }: { id: string }) => {
+  deleteEmulator(id)
 })
 
 // ── App lifecycle ─────────────────────────────────────────────────────────────

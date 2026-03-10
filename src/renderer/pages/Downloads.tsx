@@ -1,6 +1,18 @@
 import { useState, useEffect, useRef } from 'react'
-import type { Game, DownloadProgress, EmulatorInstallProgress } from '../../shared/types'
+import { useTranslation } from 'react-i18next'
 import { confirm } from '../components/ConfirmDialog'
+import type { Game, DownloadProgress, EmulatorInstallProgress, Platform } from '../../shared/types'
+import { platformLabel } from '../utils/platform'
+
+const PLATFORM_COLORS: Partial<Record<Platform, string>> = {
+  NES: '#e53e3e',
+  SNES: '#7b2d8b',
+  'Sega Genesis': '#1a56db',
+  'Sega Saturn': '#ec4899',
+  PS1: '#6b7280',
+  PS2: '#0ea5e9',
+  N64: '#008a00',
+}
 import './Downloads.css'
 
 const EMULATOR_NAMES: Record<string, string> = {
@@ -27,9 +39,11 @@ function formatTime(secs: number): string {
 }
 
 export default function Downloads() {
+  const { t } = useTranslation()
   const [games, setGames] = useState<Game[]>([])
   const [progressMap, setProgressMap] = useState<Record<number, DownloadProgress>>({})
   const [emuProgress, setEmuProgress] = useState<Record<string, EmulatorInstallProgress>>({})
+  const [paused, setPaused] = useState<Set<number>>(new Set())
   const knownIds = useRef(new Set<number>())
 
   const loadGames = () => {
@@ -88,41 +102,62 @@ export default function Downloads() {
     return () => { offProgress(); offDone(); offError(); offEmuProgress() }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  async function handlePause(gameId: number) {
+    const ok = await window.retrio.pauseDownload(gameId)
+    if (ok) setPaused((prev) => new Set(prev).add(gameId))
+  }
+
+  async function handleResume(gameId: number) {
+    setPaused((prev) => { const n = new Set(prev); n.delete(gameId); return n })
+    await window.retrio.resumeDownload(gameId)
+  }
+
   async function handleCancel(gameId: number) {
+    const game = games.find((g) => g.id === gameId)
+    if (!await confirm(t('downloads.cancel_confirm', { title: game?.title ?? '' }), { confirmLabel: t('downloads.cancel_title'), danger: true })) return
     await window.retrio.cancelDownload(gameId)
+    setPaused((prev) => { const n = new Set(prev); n.delete(gameId); return n })
     setProgressMap((prev) => { const n = { ...prev }; delete n[gameId]; return n })
     setGames((prev) => prev.filter((g) => g.id !== gameId))
   }
 
   async function handlePlay(game: Game) {
     if (!game.romPath) return
-    await window.retrio.launchGame(game.romPath, game.platform)
+    try {
+      await window.retrio.launchGame(game.romPath, game.platform)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err))
+    }
   }
 
-  async function handleRemove(game: Game) {
-    if (!await confirm(`¿Eliminar "${game.title}" de la biblioteca?`)) return
-    await window.retrio.removeFromLibrary(game.id)
-    setGames((prev) => prev.filter((g) => g.id !== game.id))
+  function handleDismiss(gameId: number) {
+    void window.retrio.dismissDownload(gameId)
+    setGames((prev) => prev.map((g) => g.id === gameId ? { ...g, dlDismissed: true } : g))
+  }
+
+  function handleDismissAll() {
+    completed.forEach((g) => void window.retrio.dismissDownload(g.id))
+    setGames((prev) => prev.map((g) => completed.some((c) => c.id === g.id) ? { ...g, dlDismissed: true } : g))
   }
 
   const active = games.filter((g) => g.downloading)
-  const completed = games.filter((g) => g.downloaded && !g.downloading)
+  const completed = games.filter((g) => g.downloaded && !g.downloading && !g.dlDismissed)
 
   return (
     <div className="page downloads-page">
-      <h1 className="downloads-title">Descargas</h1>
+      <h1 className="downloads-title">{t('downloads.title')}</h1>
 
       {active.length === 0 && completed.length === 0 && Object.keys(emuProgress).length === 0 && (
         <div className="downloads-empty">
           <DownloadIcon className="downloads-empty-icon" />
-          <p className="downloads-empty-title">Sin descargas</p>
-          <p className="downloads-empty-sub">Los juegos que descargues aparecerán aquí</p>
+          <p className="downloads-empty-title">{t('downloads.empty_title')}</p>
+          <p className="downloads-empty-sub">{t('downloads.empty_sub')}</p>
         </div>
       )}
 
       {Object.values(emuProgress).length > 0 && (
         <section className="downloads-section">
-          <h2 className="downloads-section-title">Instalando emuladores</h2>
+          <h2 className="downloads-section-title">{t('downloads.emulators_section')}</h2>
           <div className="downloads-list">
             {Object.values(emuProgress).map((ep) => {
               const pct = ep.total > 0 ? Math.round((ep.received / ep.total) * 100) : 0
@@ -134,7 +169,7 @@ export default function Downloads() {
                   <div className="dl-body">
                     <div className="dl-top">
                       <span className="dl-name">{EMULATOR_NAMES[ep.emulatorId] ?? ep.emulatorId}</span>
-                      <span className="dl-platform">Emulador</span>
+                      <span className="dl-platform">{t('downloads.emulator_label')}</span>
                     </div>
                     <div className="dl-bar-track">
                       <div className="dl-bar-fill" style={{ width: ep.total > 0 ? `${pct}%` : '100%', opacity: ep.total > 0 ? 1 : 0.4 }} />
@@ -142,7 +177,7 @@ export default function Downloads() {
                     <div className="dl-meta">
                       {ep.total > 0
                         ? <><span className="dl-pct">{pct}%</span><span className="dl-speed">{receivedMb} / {totalMb} MB</span></>
-                        : <span className="dl-speed">{receivedMb} MB descargados</span>
+                        : <span className="dl-speed">{t('downloads.downloaded_mb', { mb: receivedMb })}</span>
                       }
                     </div>
                   </div>
@@ -155,7 +190,7 @@ export default function Downloads() {
 
       {active.length > 0 && (
         <section className="downloads-section">
-          <h2 className="downloads-section-title">En descarga</h2>
+          <h2 className="downloads-section-title">{t('downloads.active_section')}</h2>
           <div className="downloads-list">
             {active.map((game) => {
               const prog = progressMap[game.id]
@@ -171,23 +206,46 @@ export default function Downloads() {
                   <div className="dl-body">
                     <div className="dl-top">
                       <span className="dl-name">{game.title}</span>
-                      <span className="dl-platform">{game.platform}</span>
+                      <span className="dl-platform" style={{ background: PLATFORM_COLORS[game.platform] ?? undefined, color: PLATFORM_COLORS[game.platform] ? '#fff' : undefined }}>{platformLabel(game.platform)}</span>
                     </div>
                     <div className="dl-bar-track">
-                      <div className="dl-bar-fill" style={{ width: `${progress}%` }} />
+                      <div
+                        className={`dl-bar-fill${paused.has(game.id) ? ' dl-bar-fill--paused' : ''}`}
+                        style={{ width: `${progress}%` }}
+                      />
                     </div>
                     <div className="dl-meta">
                       <span className="dl-pct">{progress}%</span>
-                      {speed > 0 && <span className="dl-speed">{formatSpeed(speed)}</span>}
-                      {remaining > 0 && (
-                        <span className="dl-eta">{formatTime(remaining)} restante</span>
-                      )}
+                      {paused.has(game.id)
+                        ? <span className="dl-paused">{t('downloads.paused')}</span>
+                        : <>
+                            {speed > 0 && <span className="dl-speed">{formatSpeed(speed)}</span>}
+                            {remaining > 0 && <span className="dl-eta">{t('downloads.remaining', { time: formatTime(remaining) })}</span>}
+                          </>
+                      }
                     </div>
                   </div>
+                  {paused.has(game.id) ? (
+                    <button
+                      className="dl-cancel dl-resume"
+                      onClick={() => void handleResume(game.id)}
+                      title={t('downloads.resume_title')}
+                    >
+                      <ResumeIcon />
+                    </button>
+                  ) : (
+                    <button
+                      className="dl-cancel dl-pause"
+                      onClick={() => void handlePause(game.id)}
+                      title={t('downloads.pause_title')}
+                    >
+                      <PauseIcon />
+                    </button>
+                  )}
                   <button
                     className="dl-cancel"
                     onClick={() => void handleCancel(game.id)}
-                    title="Cancelar descarga"
+                    title={t('downloads.cancel_title')}
                   >
                     <XIcon />
                   </button>
@@ -201,8 +259,9 @@ export default function Downloads() {
       {completed.length > 0 && (
         <section className="downloads-section">
           <h2 className="downloads-section-title">
-            Completadas
+            {t('downloads.completed_section')}
             <span className="downloads-count">{completed.length}</span>
+            <button className="dl-dismiss-all" onClick={handleDismissAll}>{t('downloads.dismiss_all')}</button>
           </h2>
           <div className="downloads-list">
             {completed.map((game) => (
@@ -214,23 +273,22 @@ export default function Downloads() {
                 <div className="dl-body">
                   <div className="dl-top">
                     <span className="dl-name">{game.title}</span>
-                    <span className="dl-platform">{game.platform}</span>
+                    <span className="dl-platform" style={{ background: PLATFORM_COLORS[game.platform] ?? undefined, color: PLATFORM_COLORS[game.platform] ? '#fff' : undefined }}>{platformLabel(game.platform)}</span>
                   </div>
                   <div className="dl-bar-track">
                     <div className="dl-bar-fill dl-bar-fill--done" style={{ width: '100%' }} />
                   </div>
                   <div className="dl-meta">
-                    <span className="dl-done-label">Listo</span>
+                    <span className="dl-done-label">{t('downloads.done')}</span>
                   </div>
                 </div>
                 <div className="dl-actions">
-                  {game.romPath && (
-                    <button className="dl-btn dl-btn--play" onClick={() => void handlePlay(game)}>
-                      Jugar
-                    </button>
-                  )}
-                  <button className="dl-btn dl-btn--remove" onClick={() => void handleRemove(game)}>
-                    Eliminar
+                  <button
+                    className="dl-cancel"
+                    onClick={() => handleDismiss(game.id)}
+                    title={t('downloads.dismiss_title')}
+                  >
+                    <XIcon />
                   </button>
                 </div>
               </div>
@@ -257,6 +315,23 @@ function XIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  )
+}
+
+function PauseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor">
+      <rect x="6" y="4" width="4" height="16" rx="1" />
+      <rect x="14" y="4" width="4" height="16" rx="1" />
+    </svg>
+  )
+}
+
+function ResumeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor">
+      <polygon points="5,3 19,12 5,21" />
     </svg>
   )
 }

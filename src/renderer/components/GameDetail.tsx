@@ -1,12 +1,16 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Game, Platform } from '../../shared/types'
+import { platformLabel } from '../utils/platform'
 import { confirm } from './ConfirmDialog'
+import { pickRom } from './RomPickerModal'
 import './GameDetail.css'
 
 const PLATFORM_COLORS: Record<Platform, string> = {
   NES: '#e53e3e',
   SNES: '#7b2d8b',
   'Sega Genesis': '#1a56db',
+  'Sega Saturn':  '#ec4899',
   PS1: '#6b7280',
   PS2: '#0ea5e9',
   N64: '#008a00',
@@ -28,13 +32,13 @@ async function fetchDetail(id: number): Promise<Game | null> {
 }
 
 export default function GameDetail({ game, onClose }: GameDetailProps) {
+  const { t } = useTranslation()
   const [detail, setDetail] = useState<Game | null>(null)
   const [loading, setLoading] = useState(true)
   const [inLibrary, setInLibrary] = useState(false)
   const [saving, setSaving] = useState(false)
   const [lightbox, setLightbox] = useState<{ type: 'image' | 'video'; src: string } | null>(null)
 
-  // Estado de descarga
   const [downloading, setDownloading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [downloadError, setDownloadError] = useState<string | null>(null)
@@ -48,6 +52,12 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  // Keep a stable ref to onClose so the subscription effect doesn't re-run when the
+  // parent re-renders (e.g. due to download progress updates changing Library state).
+  const onCloseRef = useRef(onClose)
+  useEffect(() => { onCloseRef.current = onClose })
+
+  // Fetch game details once when the game changes — intentionally excludes onClose.
   useEffect(() => {
     setLoading(true)
     fetchDetail(game.id)
@@ -57,32 +67,38 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
 
     if (IS_ELECTRON) {
       void window.retrio.isInLibrary(game.id).then(setInLibrary)
-
-      const offProgress = window.retrio.onDownloadProgress((data) => {
-        if (data.gameId !== game.id) return
-        setSearching(false)
-        setDownloading(true)
-        setProgress(data.progress)
-      })
-
-      const offDone = window.retrio.onDownloadDone((data) => {
-        if (data.gameId !== game.id) return
-        setDownloading(false)
-        setProgress(100)
-        setInLibrary(true)
-        onClose()
-      })
-
-      const offError = window.retrio.onDownloadError((data) => {
-        if (data.gameId !== game.id) return
-        setDownloading(false)
-        setSearching(false)
-        setDownloadError(data.message)
-      })
-
-      return () => { offProgress(); offDone(); offError() }
     }
-  }, [game.id, onClose])
+  }, [game.id])
+
+  // Subscribe to download events — stable, never needs to re-run.
+  useEffect(() => {
+    if (!IS_ELECTRON) return
+
+    const offProgress = window.retrio.onDownloadProgress((data) => {
+      if (data.gameId !== game.id) return
+      setSearching(false)
+      setDownloading(true)
+      setProgress(data.progress)
+    })
+
+    const offDone = window.retrio.onDownloadDone((data) => {
+      if (data.gameId !== game.id) return
+      setDownloading(false)
+      setProgress(100)
+      setInLibrary(true)
+      onCloseRef.current()
+    })
+
+    const offError = window.retrio.onDownloadError((data) => {
+      if (data.gameId !== game.id) return
+      setDownloading(false)
+      setSearching(false)
+      setDownloadError(data.message)
+    })
+
+    return () => { offProgress(); offDone(); offError() }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game.id])
 
   const handleAddToLibrary = useCallback(async () => {
     if (!IS_ELECTRON) return
@@ -95,25 +111,44 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
 
   const handleRemoveFromLibrary = useCallback(async () => {
     if (!IS_ELECTRON) return
-    if (!await confirm(`¿Eliminar "${game.title}" de la biblioteca?`)) return
+    if (!await confirm(t('gamedetail.remove_confirm', { title: game.title }))) return
     setSaving(true)
     await window.retrio.removeFromLibrary(game.id)
-    setInLibrary(false)
     setSaving(false)
-  }, [game.id, game.title])
+    onClose()
+  }, [game.id, game.title, onClose, t])
 
   const handleDownload = useCallback(async () => {
     if (!IS_ELECTRON) return
     setDownloadError(null)
     setSearching(true)
     const gameToDownload = detail ?? game
-    await window.retrio.downloadGame({
-      ...gameToDownload,
-      downloaded: false,
-      downloading: true,
-      progress: 0,
-    })
-  }, [detail, game])
+
+    try {
+      const roms = await window.retrio.findRoms(gameToDownload)
+
+      if (roms.length === 0) {
+        setSearching(false)
+        setDownloadError(t('gamedetail.not_found', { title: gameToDownload.title, platform: gameToDownload.platform }))
+        return
+      }
+
+      const picked = await pickRom(roms, gameToDownload.title)
+      if (!picked) {
+        setSearching(false)
+        return
+      }
+      const romOption = picked
+
+      await window.retrio.downloadGame(
+        { ...gameToDownload, downloaded: false, downloading: true, progress: 0 },
+        romOption,
+      )
+    } catch (err) {
+      setSearching(false)
+      setDownloadError(err instanceof Error ? err.message : String(err))
+    }
+  }, [detail, game, t])
 
   const handleCancel = useCallback(async () => {
     if (!IS_ELECTRON) return
@@ -165,7 +200,6 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
       setTimeout(() => { hasDragged = false }, 0)
     }
 
-    // Bloquea el click si fue un drag (en capture para interceptar antes que React)
     const onClickCapture = (e: MouseEvent) => {
       if (hasDragged) e.stopPropagation()
     }
@@ -193,7 +227,7 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
   const platformColor = PLATFORM_COLORS[data.platform] ?? '#555'
 
   return (
-    <div className="game-detail-overlay" onClick={onClose}>
+    <div className="game-detail-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <div className="game-detail-panel" onClick={(e) => e.stopPropagation()}>
         <button className="game-detail-close" onClick={onClose}>
           <CloseIcon />
@@ -210,7 +244,7 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
 
           <div className="game-detail-info">
             <div className="game-detail-platform" style={{ color: platformColor }}>
-              {data.platform}
+              {platformLabel(data.platform)}
             </div>
             <h2 className="game-detail-title">{data.title}</h2>
 
@@ -224,25 +258,24 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
               ))}
             </div>
 
-            {loading && <p className="game-detail-loading">Cargando detalles...</p>}
+            {loading && <p className="game-detail-loading">{t('gamedetail.loading')}</p>}
 
             {data.summary && <p className="game-detail-summary">{data.summary}</p>}
 
             {data.developers && data.developers.length > 0 && (
               <p className="game-detail-developer">
-                Desarrollado por {data.developers.join(', ')}
+                {t('gamedetail.developer', { names: data.developers.join(', ') })}
               </p>
             )}
 
-            {/* Progreso de descarga */}
             {(searching || downloading) && (
               <div className="download-progress-area">
                 {searching && (
-                  <p className="download-status">Buscando en Archive.org...</p>
+                  <p className="download-status">{t('gamedetail.searching')}</p>
                 )}
                 {downloading && (
                   <>
-                    <p className="download-status">Descargando... {progress}%</p>
+                    <p className="download-status">{t('gamedetail.downloading', { progress })}</p>
                     <div className="download-progress-bar">
                       <div
                         className="download-progress-fill"
@@ -255,7 +288,7 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
                   className="btn-action btn-action--ghost"
                   onClick={() => void handleCancel()}
                 >
-                  Cancelar
+                  {t('gamedetail.cancel')}
                 </button>
               </div>
             )}
@@ -267,14 +300,14 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
             <div className="game-detail-actions">
               {game.downloaded ? (
                 <button className="btn-action btn-action--play">
-                  <PlayIcon /> Jugar
+                  <PlayIcon /> {t('gamedetail.play')}
                 </button>
               ) : IS_ELECTRON && !downloading && !searching ? (
                 <button
                   className="btn-action btn-action--download"
                   onClick={() => void handleDownload()}
                 >
-                  <DownloadIcon /> Descargar
+                  <DownloadIcon /> {t('gamedetail.download')}
                 </button>
               ) : null}
 
@@ -285,7 +318,7 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
                     onClick={() => void handleRemoveFromLibrary()}
                     disabled={saving}
                   >
-                    <CheckIcon /> En biblioteca
+                    <CheckIcon /> {t('gamedetail.in_library')}
                   </button>
                 ) : (
                   <button
@@ -293,7 +326,7 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
                     onClick={() => void handleAddToLibrary()}
                     disabled={saving}
                   >
-                    <PlusIcon /> Añadir
+                    <PlusIcon /> {t('gamedetail.add')}
                   </button>
                 )
               )}

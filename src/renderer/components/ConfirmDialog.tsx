@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import './ConfirmDialog.css'
 
 interface ConfirmOptions {
@@ -19,6 +20,7 @@ export function confirm(message: string, opts: Omit<ConfirmOptions, 'message'> =
 }
 
 export default function ConfirmDialog() {
+  const { t } = useTranslation()
   const [state, setState] = useState<{ opts: ConfirmOptions; resolve: Resolver } | null>(null)
 
   useEffect(() => {
@@ -38,10 +40,10 @@ export default function ConfirmDialog() {
     setState(null)
   }
 
-  const { message, confirmLabel = 'Eliminar', cancelLabel = 'Cancelar', danger = true } = state.opts
+  const { message, confirmLabel = t('confirm.delete'), cancelLabel = t('confirm.cancel'), danger = true } = state.opts
 
   return (
-    <div className="confirm-overlay" onClick={handleCancel}>
+    <div className="confirm-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) handleCancel() }}>
       <div className="confirm-panel" onClick={(e) => e.stopPropagation()}>
         <button className="confirm-close" onClick={handleCancel}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -1,3 +1,108 @@
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.settings-row + .settings-row {
+  margin-top: 16px;
+}
+
+.settings-row-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+
+.lang-select {
+  position: relative;
+}
+
+.lang-select-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  min-width: 148px;
+  justify-content: space-between;
+}
+
+.lang-select-btn:hover {
+  border-color: var(--accent);
+  background: var(--bg-hover);
+}
+
+.lang-select-btn svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.lang-select-btn .fi,
+.lang-option .fi {
+  width: 20px;
+  height: 15px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.lang-name {
+  flex: 1;
+  text-align: left;
+}
+
+.lang-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  z-index: 50;
+}
+
+.lang-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  text-align: left;
+}
+
+.lang-option:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.lang-option--active {
+  color: var(--accent);
+  background: rgba(99, 102, 241, 0.08);
+}
+
 .settings-title {
   font-size: 24px;
   font-weight: 700;
@@ -102,6 +207,69 @@
   background: var(--accent-hover);
 }
 
+/* ── Emulator options menu ───────────────────────────────────────────────── */
+
+.emu-menu-wrap {
+  position: relative;
+}
+
+.emu-menu-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: background 0.15s, color 0.15s;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.emu-menu-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.emu-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  min-width: 140px;
+  z-index: 100;
+  overflow: hidden;
+}
+
+.emu-dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 14px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.emu-dropdown-item:hover {
+  background: var(--bg-hover);
+}
+
+.emu-dropdown-item--danger {
+  color: var(--red);
+}
+
+.emu-dropdown-item--danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
 .path-row {
   display: flex;
   align-items: center;
@@ -182,4 +350,13 @@
 .about-value {
   font-size: 13px;
   color: var(--text-primary);
+}
+
+.about-link {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.about-link:hover {
+  text-decoration: underline;
 }

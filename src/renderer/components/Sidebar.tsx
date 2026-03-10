@@ -1,31 +1,34 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import './Sidebar.css'
 
 interface NavItem {
   to: string
   icon: React.FC<{ className?: string }>
-  label: string
+  labelKey: string
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: '/home', icon: HomeIcon, label: 'Inicio' },
-  { to: '/search', icon: SearchIcon, label: 'Buscar' },
-  { to: '/library', icon: LibraryIcon, label: 'Biblioteca' },
-  { to: '/downloads', icon: DownloadIcon, label: 'Descargas' },
-  { to: '/settings', icon: SettingsIcon, label: 'Ajustes' },
+  { to: '/home', icon: HomeIcon, labelKey: 'sidebar.home' },
+  { to: '/search', icon: SearchIcon, labelKey: 'sidebar.search' },
+  { to: '/library', icon: LibraryIcon, labelKey: 'sidebar.library' },
+  { to: '/downloads', icon: DownloadIcon, labelKey: 'sidebar.downloads' },
+  { to: '/settings', icon: SettingsIcon, labelKey: 'sidebar.settings' },
 ]
 
 export default function Sidebar() {
+  const { t } = useTranslation()
+
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <span className="sidebar-logo-icon">R</span>
+        <img src="/RetrioIcon.png" className="sidebar-logo-icon" alt="Retrio" />
         <span className="sidebar-logo-text">Retrio</span>
       </div>
 
       <nav className="sidebar-nav">
-        {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
+        {NAV_ITEMS.map(({ to, icon: Icon, labelKey }) => (
           <NavLink
             key={to}
             to={to}
@@ -34,7 +37,7 @@ export default function Sidebar() {
             }
           >
             <Icon className="sidebar-item-icon" />
-            <span className="sidebar-item-label">{label}</span>
+            <span className="sidebar-item-label">{t(labelKey)}</span>
           </NavLink>
         ))}
       </nav>
