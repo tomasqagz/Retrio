@@ -1,0 +1,228 @@
+.onb-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  animation: onb-in 0.35s ease forwards;
+}
+
+@keyframes onb-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.onb-card {
+  width: 460px;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  padding: 40px 36px;
+}
+
+.onb-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.onb-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.onb-logo-retr {
+  color: var(--text-primary);
+}
+
+.onb-logo-io {
+  color: var(--accent);
+}
+
+/* Step 2 */
+.onb-step-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  align-self: flex-start;
+}
+
+.onb-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.onb-guide {
+  width: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+
+.onb-guide-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.onb-guide-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.onb-guide-chevron {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.onb-guide-chevron--open {
+  transform: rotate(180deg);
+}
+
+.onb-guide-steps {
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.onb-inline-link {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.onb-inline-link:hover {
+  text-decoration: underline;
+}
+
+.onb-guide-code {
+  background: var(--bg-hover);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 11px;
+  color: var(--text-primary);
+}
+
+.onb-portal-link {
+  font-size: 12px;
+  color: var(--accent);
+  text-decoration: none;
+  align-self: flex-start;
+}
+
+.onb-portal-link:hover {
+  text-decoration: underline;
+}
+
+/* Fields */
+.onb-field {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.onb-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.onb-input {
+  width: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 9px 12px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.onb-input:focus {
+  border-color: var(--accent);
+}
+
+/* Buttons */
+.onb-btn-primary {
+  width: 100%;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 11px 0;
+  border-radius: var(--radius-md);
+  transition: background 0.15s, opacity 0.15s;
+  margin-top: 4px;
+}
+
+.onb-btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.onb-btn-primary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.onb-btn-skip {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 4px 0;
+  transition: color 0.15s;
+}
+
+.onb-btn-skip:hover {
+  color: var(--text-secondary);
+}
+
+.onb-footer-row {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.onb-btn-back {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 4px 0;
+  transition: color 0.15s;
+}
+
+.onb-btn-back:hover {
+  color: var(--text-secondary);
+}
