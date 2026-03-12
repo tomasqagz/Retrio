@@ -116,6 +116,10 @@ export interface RetrioAPI {
   getIgdbCredentials: () => Promise<{ clientId: string; clientSecret: string }>
   setIgdbCredentials: (clientId: string, clientSecret: string) => Promise<void>
 
+  // Cache de búsqueda
+  clearSearchCache: () => Promise<void>
+  getSearchCacheInfo: () => Promise<{ count: number; sizeBytes: number }>
+
   // Biblioteca (SQLite)
   getLibrary: () => Promise<Game[]>
   addToLibrary: (game: Game) => Promise<void>
