@@ -1,4 +1,5 @@
 import type { Game, Platform, SortBy } from '../shared/types'
+import { readConfig } from './config'
 
 const TWITCH_TOKEN_URL = 'https://id.twitch.tv/oauth2/token'
 const IGDB_BASE_URL = 'https://api.igdb.com/v4'
@@ -61,7 +62,10 @@ async function getAccessToken(clientId: string, clientSecret: string): Promise<s
 
   const res = await fetch(url.toString(), { method: 'POST' })
   if (!res.ok) {
-    throw new Error(`Twitch auth error: ${res.status} ${res.statusText}`)
+    if (res.status === 400 || res.status === 401) {
+      throw new Error('IGDB_AUTH_ERROR: Las credenciales de Twitch/IGDB son incorrectas. Revisalas en Ajustes.')
+    }
+    throw new Error(`IGDB_AUTH_ERROR: Error de autenticación con Twitch (${res.status})`)
   }
 
   const data = (await res.json()) as TwitchTokenResponse
@@ -100,12 +104,17 @@ function buildCoverUrl(imageId: string, size = 'cover_big'): string {
   return `https://images.igdb.com/igdb/image/upload/t_${size}/${imageId}.jpg`
 }
 
+export function invalidateTokenCache(): void {
+  tokenCache = null
+}
+
 function getCredentials(): { clientId: string; clientSecret: string } {
-  const clientId = process.env.IGDB_CLIENT_ID
-  const clientSecret = process.env.IGDB_CLIENT_SECRET
+  const config = readConfig()
+  const clientId = config.igdbClientId || process.env.IGDB_CLIENT_ID
+  const clientSecret = config.igdbClientSecret || process.env.IGDB_CLIENT_SECRET
 
   if (!clientId || !clientSecret || clientId === 'TU_CLIENT_ID_AQUI') {
-    throw new Error('IGDB_CLIENT_ID y IGDB_CLIENT_SECRET no están configurados en .env')
+    throw new Error('IGDB_AUTH_ERROR: No hay credenciales configuradas. Ingresalas en Ajustes.')
   }
 
   return { clientId, clientSecret }

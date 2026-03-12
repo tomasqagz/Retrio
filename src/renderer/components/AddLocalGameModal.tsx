@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { Game, Platform } from '../../shared/types'
 import './AddLocalGameModal.css'
 
-const PLATFORMS: Platform[] = ['NES', 'SNES', 'N64', 'Sega Genesis', 'PS1', 'PS2']
+const PLATFORMS: Platform[] = ['NES', 'SNES', 'N64', 'Sega Genesis', 'Sega Saturn', 'PS1', 'PS2']
 
 const EXT_TO_PLATFORM: Record<string, Platform> = {
   nes: 'NES',

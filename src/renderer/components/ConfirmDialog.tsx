@@ -4,6 +4,7 @@ import './ConfirmDialog.css'
 
 interface ConfirmOptions {
   message: string
+  subtitle?: string
   confirmLabel?: string
   cancelLabel?: string
   danger?: boolean
@@ -51,6 +52,7 @@ export default function ConfirmDialog() {
           </svg>
         </button>
         <p className="confirm-message">{message}</p>
+        {state.opts.subtitle && <p className="confirm-subtitle">{state.opts.subtitle}</p>}
         <div className="confirm-actions">
           <button className="confirm-btn confirm-btn--cancel" onClick={handleCancel}>
             {cancelLabel}

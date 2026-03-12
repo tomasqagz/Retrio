@@ -33,6 +33,42 @@
   to { transform: scale(1) translateY(0); opacity: 1; }
 }
 
+.game-detail-favorite {
+  position: absolute;
+  top: 14px;
+  right: 54px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  z-index: 1;
+  transition: background 0.15s, color 0.15s;
+}
+
+.game-detail-favorite svg {
+  width: 16px;
+  height: 16px;
+}
+
+.game-detail-favorite:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.game-detail-favorite--active {
+  color: #ef4444;
+}
+
+.game-detail-favorite--active:hover {
+  background: rgba(239, 68, 68, 0.15);
+}
+
 .game-detail-close {
   position: absolute;
   top: 14px;
@@ -335,6 +371,50 @@
   color: var(--red);
 }
 
+.no-rom-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 12px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  opacity: 0.5;
+  transition: opacity 0.15s, color 0.15s;
+  font-family: inherit;
+}
+
+.no-rom-toggle svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.no-rom-toggle:hover {
+  opacity: 1;
+  color: var(--red);
+}
+
+/* Active state: clearly marked as "no ROM" */
+.no-rom-toggle--active {
+  opacity: 1;
+  color: var(--red);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-weight: 600;
+}
+
+.no-rom-toggle--active:hover {
+  background: rgba(239, 68, 68, 0.05);
+  color: rgba(239, 68, 68, 0.6);
+  border-color: rgba(239, 68, 68, 0.15);
+}
+
 .btn-action:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -444,4 +524,124 @@
   font-size: 13px;
   color: #e53e3e;
   margin: 8px 0 0;
+}
+
+/* ── Tabs (media / details) ───────────────────────────────────────────────── */
+
+.game-detail-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 28px;
+  border-bottom: 1px solid var(--border);
+}
+
+.game-detail-tab {
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.game-detail-tab:hover {
+  color: var(--text-primary);
+}
+
+.game-detail-tab--active {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent);
+}
+
+/* ── Game info (size, play time, etc.) ───────────────────────────────────── */
+
+.game-info-grid--tab {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border);
+  margin: 0;
+  border-top: none;
+}
+
+.game-info-grid--tab .game-info-item {
+  background: var(--bg-secondary);
+  padding: 16px 20px;
+}
+
+.game-info-grid--tab .game-info-item--wide {
+  grid-column: 1 / -1;
+}
+
+.game-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.game-info-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+}
+
+.game-info-value {
+  font-size: 13px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.game-info-value--file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.game-info-filename {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: monospace;
+}
+
+.game-info-folder-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.game-info-folder-btn svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.game-info-folder-btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }

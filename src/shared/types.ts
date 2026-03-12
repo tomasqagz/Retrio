@@ -31,6 +31,11 @@ export interface Game {
   progress?: number
   romPath?: string
   dlDismissed?: boolean
+  noRom?: boolean
+  playTime?: number      // seconds played total
+  lastPlayedAt?: number  // unix timestamp of last session start
+  addedAt?: number       // unix timestamp (seconds)
+  favorite?: boolean
 }
 
 // ── Emuladores ────────────────────────────────────────────────────────────────
@@ -94,7 +99,7 @@ export interface RetrioAPI {
   onDownloadError: (callback: (data: { gameId: number; message: string }) => void) => () => void
 
   // Emuladores
-  launchGame: (romPath: string, platform: Platform) => Promise<void>
+  launchGame: (romPath: string, platform: Platform, gameId?: number) => Promise<void>
   setWindowSize: (width: number, height: number) => Promise<void>
   installEmulator: (name: string) => Promise<void>
   openEmulator: (id: string) => Promise<void>
@@ -107,12 +112,19 @@ export interface RetrioAPI {
   openFolder: (path: string) => Promise<void>
   getFolderDefaults: () => Promise<{ roms: string; emulators: string; bios: string }>
 
+  // Configuración IGDB
+  getIgdbCredentials: () => Promise<{ clientId: string; clientSecret: string }>
+  setIgdbCredentials: (clientId: string, clientSecret: string) => Promise<void>
+
   // Biblioteca (SQLite)
   getLibrary: () => Promise<Game[]>
   addToLibrary: (game: Game) => Promise<void>
   removeFromLibrary: (id: number) => Promise<void>
   isInLibrary: (id: number) => Promise<boolean>
   dismissDownload: (id: number) => Promise<void>
+  markNoRom: (id: number, value: boolean) => Promise<void>
+  getRomInfo: (id: number) => Promise<{ fileSize: number; fileName: string } | null>
+  toggleFavorite: (id: number) => Promise<void>
 }
 
 // ── Extensión global de Window para el renderer ───────────────────────────────

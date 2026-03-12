@@ -43,6 +43,10 @@ function migrate(db: Database.Database): void {
   `)
   // Add dl_dismissed column if it doesn't exist (for existing databases)
   try { db.exec(`ALTER TABLE games ADD COLUMN dl_dismissed INTEGER NOT NULL DEFAULT 0`) } catch { /* already exists */ }
+  try { db.exec(`ALTER TABLE games ADD COLUMN no_rom INTEGER NOT NULL DEFAULT 0`) } catch { /* already exists */ }
+  try { db.exec(`ALTER TABLE games ADD COLUMN play_time INTEGER NOT NULL DEFAULT 0`) } catch { /* already exists */ }
+  try { db.exec(`ALTER TABLE games ADD COLUMN last_played_at INTEGER`) } catch { /* already exists */ }
+  try { db.exec(`ALTER TABLE games ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0`) } catch { /* already exists */ }
   // Reset any downloads that were in progress when the app was last closed
   db.exec(`DELETE FROM games WHERE downloading = 1 AND downloaded = 0`)
 }
@@ -65,7 +69,11 @@ interface GameRow {
   progress: number
   rom_path: string | null
   dl_dismissed: number
+  no_rom: number
+  play_time: number
+  last_played_at: number | null
   added_at: number
+  favorite: number
 }
 
 function rowToGame(row: GameRow): Game {
@@ -85,6 +93,11 @@ function rowToGame(row: GameRow): Game {
     progress: row.progress,
     romPath: row.rom_path ?? undefined,
     dlDismissed: Boolean(row.dl_dismissed),
+    noRom: Boolean(row.no_rom),
+    playTime: row.play_time ?? 0,
+    lastPlayedAt: row.last_played_at ?? undefined,
+    addedAt: row.added_at,
+    favorite: Boolean(row.favorite),
   }
 }
 
@@ -161,6 +174,20 @@ export function markAsDownloaded(id: number, romPath: string): void {
 
 export function dismissDownload(id: number): void {
   getDb().prepare('UPDATE games SET dl_dismissed = 1 WHERE id = ?').run(id)
+}
+
+export function setNoRom(id: number, value: boolean): void {
+  getDb().prepare('UPDATE games SET no_rom = ? WHERE id = ?').run(value ? 1 : 0, id)
+}
+
+export function addPlayTime(id: number, seconds: number, startedAt: number): void {
+  getDb()
+    .prepare('UPDATE games SET play_time = play_time + ?, last_played_at = ? WHERE id = ?')
+    .run(seconds, startedAt, id)
+}
+
+export function toggleFavorite(id: number): void {
+  getDb().prepare('UPDATE games SET favorite = CASE WHEN favorite = 1 THEN 0 ELSE 1 END WHERE id = ?').run(id)
 }
 
 export function isInLibrary(id: number): boolean {

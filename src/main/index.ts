@@ -2,7 +2,8 @@ import 'dotenv/config'
 import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron'
 import path from 'path'
 import fs from 'fs'
-import { searchGames, getPopularGames, getGameById } from './igdb'
+import { searchGames, getPopularGames, getGameById, invalidateTokenCache } from './igdb'
+import { readConfig, writeConfig } from './config'
 import {
   getLibrary,
   getGameFromLibrary,
@@ -10,6 +11,9 @@ import {
   removeFromLibrary,
   isInLibrary,
   dismissDownload,
+  setNoRom,
+  addPlayTime,
+  toggleFavorite,
 } from './database'
 import { startArchiveDownload, pauseArchiveDownload, resumeArchiveDownload, cancelArchiveDownload, findRomsOnArchive } from './archiveorg'
 import { destroyClient } from './torrent'
@@ -118,6 +122,22 @@ ipcMain.handle('library:dismiss-download', (_e, { id }: { id: number }) => {
   dismissDownload(id)
 })
 
+ipcMain.handle('library:set-no-rom', (_e, { id, value }: { id: number; value: boolean }) => {
+  setNoRom(id, value)
+})
+
+
+ipcMain.handle('library:toggle-favorite', (_e, { id }: { id: number }) => {
+  toggleFavorite(id)
+})
+
+ipcMain.handle('library:get-rom-info', (_e, { id }: { id: number }) => {
+  const game = getGameFromLibrary(id)
+  if (!game?.romPath || !fs.existsSync(game.romPath)) return null
+  const stat = fs.statSync(game.romPath)
+  return { fileSize: stat.size, fileName: path.basename(game.romPath) }
+})
+
 // ── Archive.org IPC ───────────────────────────────────────────────────────────
 
 ipcMain.handle('archive:find-roms', async (_e, { game }: { game: Game }) => {
@@ -175,8 +195,10 @@ ipcMain.handle('emulator:install', async (_e, { name }: { name: string }) => {
   })
 })
 
-ipcMain.handle('emulator:launch', (_e, { romPath, platform }: { romPath: string; platform: Platform }) => {
-  return launchGame(romPath, platform)
+ipcMain.handle('emulator:launch', (_e, { romPath, platform, gameId }: { romPath: string; platform: Platform; gameId?: number }) => {
+  const sessionStart = Math.floor(Date.now() / 1000)
+  const onExit = gameId != null ? (seconds: number) => { addPlayTime(gameId, seconds, sessionStart) } : undefined
+  return launchGame(romPath, platform, onExit)
 })
 
 ipcMain.handle('window:set-size', (_e, { width, height }: { width: number; height: number }) => {
@@ -187,6 +209,18 @@ ipcMain.handle('window:set-size', (_e, { width, height }: { width: number; heigh
 
 ipcMain.handle('emulator:delete', (_e, { id }: { id: string }) => {
   deleteEmulator(id)
+})
+
+// ── Config IPC ────────────────────────────────────────────────────────────────
+
+ipcMain.handle('config:get-igdb', () => {
+  const config = readConfig()
+  return { clientId: config.igdbClientId ?? '', clientSecret: config.igdbClientSecret ?? '' }
+})
+
+ipcMain.handle('config:set-igdb', (_e, { clientId, clientSecret }: { clientId: string; clientSecret: string }) => {
+  writeConfig({ igdbClientId: clientId.trim(), igdbClientSecret: clientSecret.trim() })
+  invalidateTokenCache()
 })
 
 // ── App lifecycle ─────────────────────────────────────────────────────────────

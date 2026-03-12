@@ -33,6 +33,11 @@ const [langOpen, setLangOpen] = useState(false)
   const resRef = useRef<HTMLDivElement | null>(null)
   const menuRef = useRef<HTMLDivElement | null>(null)
   const langRef = useRef<HTMLDivElement | null>(null)
+  const [igdbClientId, setIgdbClientId] = useState('')
+  const [igdbClientSecret, setIgdbClientSecret] = useState('')
+  const [igdbHasCredentials, setIgdbHasCredentials] = useState(false)
+  const [igdbSaving, setIgdbSaving] = useState(false)
+  const [igdbExpanded, setIgdbExpanded] = useState(false)
 
   useEffect(() => {
     if (!IS_ELECTRON) return
@@ -46,6 +51,13 @@ const [langOpen, setLangOpen] = useState(false)
       setRomsPath(roms)
       setEmulatorsPath(emuPath)
       setBiosPath(bios)
+    })
+    void window.retrio.getIgdbCredentials().then(({ clientId, clientSecret }) => {
+      const has = Boolean(clientId)
+      setIgdbHasCredentials(has)
+      setIgdbExpanded(!has)
+      setIgdbClientId(clientId)
+      setIgdbClientSecret(clientSecret)
     })
   }, [])
 
@@ -125,6 +137,21 @@ const [langOpen, setLangOpen] = useState(false)
     toast(t('settings.deleted_emulator', { name }), 'info')
   }
 
+  async function handleSaveIgdb() {
+    if (!IS_ELECTRON || igdbSaving) return
+    setIgdbSaving(true)
+    try {
+      await window.retrio.setIgdbCredentials(igdbClientId, igdbClientSecret)
+      setIgdbHasCredentials(Boolean(igdbClientId.trim()))
+      setIgdbExpanded(false)
+      toast(t('settings.igdb_saved'), 'success')
+    } catch {
+      toast(t('settings.igdb_error'), 'error')
+    } finally {
+      setIgdbSaving(false)
+    }
+  }
+
 const handleWindowSizeChange = useCallback((w: number, h: number) => {
     const key = `${w}x${h}`
     localStorage.setItem('retrio-window-size', key)
@@ -143,6 +170,84 @@ const handleLanguageChange = useCallback((code: string) => {
   return (
     <div className="page settings-page">
       <h1 className="settings-title">{t('settings.title')}</h1>
+
+      <div className={`igdb-card ${igdbHasCredentials ? 'igdb-card--ok' : 'igdb-card--missing'}`}>
+        <button className="igdb-card-header" onClick={() => setIgdbExpanded((o) => !o)}>
+          <div className="igdb-card-header-left">
+            {igdbHasCredentials ? <CheckSmallIcon /> : <WarnIcon />}
+            <span className="igdb-card-title">{t('settings.igdb_title')}</span>
+            <span className="igdb-card-badge">
+              {igdbHasCredentials ? t('settings.igdb_status_ok') : t('settings.igdb_status_missing')}
+            </span>
+          </div>
+          <ChevronIcon open={igdbExpanded} />
+        </button>
+
+        {igdbExpanded && (
+          <div className="igdb-card-body">
+            <p className="settings-section-desc">{t('settings.igdb_desc')}</p>
+
+            <div className="igdb-guide">
+              <p className="igdb-guide-title">{t('settings.igdb_guide_title')}</p>
+              <ol className="igdb-guide-steps">
+                <li>
+                  {t('settings.igdb_guide_step1')}{' '}
+                  <a className="igdb-inline-link" href="https://dev.twitch.tv/console/apps" target="_blank" rel="noreferrer">dev.twitch.tv/console/apps</a>
+                </li>
+                <li>{t('settings.igdb_guide_step2')}</li>
+                <li>{t('settings.igdb_guide_step3')}</li>
+                <li>
+                  {t('settings.igdb_guide_step4')}{' '}
+                  <code className="igdb-guide-code">http://localhost</code>
+                </li>
+                <li>{t('settings.igdb_guide_step5')}</li>
+                <li>
+                  {t('settings.igdb_guide_step6')}{' '}
+                  <strong>Confidential</strong>
+                </li>
+                <li>{t('settings.igdb_guide_step7')}</li>
+              </ol>
+              <a className="igdb-portal-link" href="https://dev.twitch.tv/console/apps" target="_blank" rel="noreferrer">
+                {t('settings.igdb_link')}
+              </a>
+            </div>
+
+            <div className="path-row">
+              <label className="path-label">{t('settings.igdb_client_id')}</label>
+              <div className="path-input-group">
+                <input
+                  type="text"
+                  className="path-input"
+                  value={igdbClientId}
+                  onChange={(e) => setIgdbClientId(e.target.value)}
+                  placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+            <div className="path-row">
+              <label className="path-label">{t('settings.igdb_client_secret')}</label>
+              <div className="path-input-group">
+                <input
+                  type="password"
+                  className="path-input"
+                  value={igdbClientSecret}
+                  onChange={(e) => setIgdbClientSecret(e.target.value)}
+                  placeholder="••••••••••••••••••••••••••••••••"
+                  autoComplete="new-password"
+                />
+              </div>
+            </div>
+            <button
+              className="btn-save-igdb"
+              onClick={() => void handleSaveIgdb()}
+              disabled={igdbSaving || !igdbClientId.trim() || !igdbClientSecret.trim()}
+            >
+              {t('settings.igdb_save')}
+            </button>
+          </div>
+        )}
+      </div>
 
       <section className="settings-section">
         <h2 className="settings-section-title">{t('settings.language_title')}</h2>
@@ -347,6 +452,24 @@ function DotsIcon() {
       <circle cx="5" cy="12" r="2" />
       <circle cx="12" cy="12" r="2" />
       <circle cx="19" cy="12" r="2" />
+    </svg>
+  )
+}
+
+function CheckSmallIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  )
+}
+
+function WarnIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="14" height="14">
+      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
     </svg>
   )
 }

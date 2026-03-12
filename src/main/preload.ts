@@ -38,8 +38,8 @@ const api: RetrioAPI = {
   },
 
   // Emuladores
-  launchGame: (romPath, platform) =>
-    ipcRenderer.invoke('emulator:launch', { romPath, platform }),
+  launchGame: (romPath, platform, gameId) =>
+    ipcRenderer.invoke('emulator:launch', { romPath, platform, gameId }),
   setWindowSize: (width, height) =>
     ipcRenderer.invoke('window:set-size', { width, height }),
   installEmulator: (name) =>
@@ -61,12 +61,19 @@ const api: RetrioAPI = {
   openFolder: (folderPath: string) => ipcRenderer.invoke('folder:open', { path: folderPath }),
   getFolderDefaults: () => ipcRenderer.invoke('folder:get-defaults'),
 
+  // Configuración IGDB
+  getIgdbCredentials: () => ipcRenderer.invoke('config:get-igdb'),
+  setIgdbCredentials: (clientId: string, clientSecret: string) => ipcRenderer.invoke('config:set-igdb', { clientId, clientSecret }),
+
   // Biblioteca SQLite
   getLibrary: () => ipcRenderer.invoke('library:get'),
   addToLibrary: (game) => ipcRenderer.invoke('library:add', game),
   removeFromLibrary: (id) => ipcRenderer.invoke('library:remove', { id }),
   isInLibrary: (id) => ipcRenderer.invoke('library:has', { id }),
   dismissDownload: (id) => ipcRenderer.invoke('library:dismiss-download', { id }),
+  markNoRom: (id, value) => ipcRenderer.invoke('library:set-no-rom', { id, value }),
+  getRomInfo: (id) => ipcRenderer.invoke('library:get-rom-info', { id }),
+  toggleFavorite: (id) => ipcRenderer.invoke('library:toggle-favorite', { id }),
 }
 
 contextBridge.exposeInMainWorld('retrio', api)
