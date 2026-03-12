@@ -65,6 +65,10 @@ const api: RetrioAPI = {
   getIgdbCredentials: () => ipcRenderer.invoke('config:get-igdb'),
   setIgdbCredentials: (clientId: string, clientSecret: string) => ipcRenderer.invoke('config:set-igdb', { clientId, clientSecret }),
 
+  // Cache de búsqueda
+  clearSearchCache: () => ipcRenderer.invoke('cache:clear'),
+  getSearchCacheInfo: () => ipcRenderer.invoke('cache:info'),
+
   // Biblioteca SQLite
   getLibrary: () => ipcRenderer.invoke('library:get'),
   addToLibrary: (game) => ipcRenderer.invoke('library:add', game),

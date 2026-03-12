@@ -147,7 +147,14 @@
     "igdb_saved": "Credenciales guardadas correctamente",
     "igdb_error": "Error al guardar las credenciales",
     "igdb_status_ok": "Credenciales configuradas",
-    "igdb_status_missing": "Sin credenciales — la búsqueda no funcionará"
+    "igdb_status_missing": "Sin credenciales — la búsqueda no funcionará",
+    "cache_title": "Caché de búsqueda",
+    "cache_desc": "Los resultados de búsqueda se guardan localmente para evitar llamadas innecesarias a la API. El caché expira automáticamente después de 1 semana.",
+    "cache_info": "{{count}} búsquedas guardadas · {{size}}",
+    "cache_clear": "Borrar caché",
+    "cache_clearing": "Borrando...",
+    "cache_cleared": "Caché borrado correctamente",
+    "cache_error": "Error al borrar el caché"
   },
   "gamecard": {
     "play": "Jugar",

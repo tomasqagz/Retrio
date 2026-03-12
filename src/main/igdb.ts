@@ -1,5 +1,6 @@
 import type { Game, Platform, SortBy } from '../shared/types'
 import { readConfig } from './config'
+import { getCachedSearch, setCachedSearch, getCachedGame, setCachedGame } from './database'
 
 const TWITCH_TOKEN_URL = 'https://id.twitch.tv/oauth2/token'
 const IGDB_BASE_URL = 'https://api.igdb.com/v4'
@@ -170,6 +171,10 @@ export async function searchGames(
   offset = 0,
   genreId: number | null = null
 ): Promise<Game[]> {
+  const cacheKey = `search:${query}:${platform ?? 'all'}:${sortBy}:${offset}:${genreId ?? 0}`
+  const cached = getCachedSearch(cacheKey)
+  if (cached) return cached
+
   const { clientId, clientSecret } = getCredentials()
   const accessToken = await getAccessToken(clientId, clientSecret)
 
@@ -208,6 +213,7 @@ export async function searchGames(
     })
   }
 
+  setCachedSearch(cacheKey, mapped)
   return mapped
 }
 
@@ -221,6 +227,9 @@ export async function getPopularGames(
 }
 
 export async function getGameById(igdbId: number): Promise<Game | null> {
+  const cached = getCachedGame(igdbId)
+  if (cached) return cached
+
   const { clientId, clientSecret } = getCredentials()
   const accessToken = await getAccessToken(clientId, clientSecret)
 
@@ -233,7 +242,7 @@ export async function getGameById(igdbId: number): Promise<Game | null> {
   const g = games[0]
   if (!g) return null
 
-  return {
+  const game: Game = {
     ...mapGame(g, ALL_PLATFORM_IDS),
     screenshots: (g.screenshots ?? []).map((s) =>
       buildCoverUrl(s.image_id, 'screenshot_big')
@@ -244,6 +253,9 @@ export async function getGameById(igdbId: number): Promise<Game | null> {
       .filter((name): name is string => Boolean(name)),
     videos: (g.videos ?? []).map((v) => v.video_id),
   }
+
+  setCachedGame(igdbId, game)
+  return game
 }
 
 function resolvePlatform(platformIds: number[], preferredIds: number[]): Platform {

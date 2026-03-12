@@ -10,6 +10,12 @@ const IS_ELECTRON = Boolean(window.retrio)
 
 let emulatorsCache: Emulator[] | null = null
 
+function formatCacheSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
 const WINDOW_SIZES = [
   { label: '1280×720',                  w: 1280, h: 720  },
   { label: '1366×768',                  w: 1366, h: 768  },
@@ -38,6 +44,8 @@ const [langOpen, setLangOpen] = useState(false)
   const [igdbHasCredentials, setIgdbHasCredentials] = useState(false)
   const [igdbSaving, setIgdbSaving] = useState(false)
   const [igdbExpanded, setIgdbExpanded] = useState(false)
+  const [cacheInfo, setCacheInfo] = useState<{ count: number; sizeBytes: number } | null>(null)
+  const [cacheClearing, setCacheClearing] = useState(false)
 
   useEffect(() => {
     if (!IS_ELECTRON) return
@@ -59,6 +67,7 @@ const [langOpen, setLangOpen] = useState(false)
       setIgdbClientId(clientId)
       setIgdbClientSecret(clientSecret)
     })
+    void window.retrio.getSearchCacheInfo().then(setCacheInfo)
   }, [])
 
   useEffect(() => {
@@ -149,6 +158,20 @@ const [langOpen, setLangOpen] = useState(false)
       toast(t('settings.igdb_error'), 'error')
     } finally {
       setIgdbSaving(false)
+    }
+  }
+
+  async function handleClearCache() {
+    if (!IS_ELECTRON || cacheClearing) return
+    setCacheClearing(true)
+    try {
+      await window.retrio.clearSearchCache()
+      setCacheInfo({ count: 0, sizeBytes: 0 })
+      toast(t('settings.cache_cleared'), 'success')
+    } catch {
+      toast(t('settings.cache_error'), 'error')
+    } finally {
+      setCacheClearing(false)
     }
   }
 
@@ -403,6 +426,25 @@ const handleLanguageChange = useCallback((code: string) => {
             />
             <button className="btn-browse" onClick={() => void window.retrio.openFolder(biosPath)}>{t('settings.browse')}</button>
           </div>
+        </div>
+      </section>
+
+      <section className="settings-section">
+        <h2 className="settings-section-title">{t('settings.cache_title')}</h2>
+        <p className="settings-section-desc">{t('settings.cache_desc')}</p>
+        <div className="settings-row">
+          <span className="settings-row-label">
+            {cacheInfo
+              ? t('settings.cache_info', { count: cacheInfo.count, size: formatCacheSize(cacheInfo.sizeBytes) })
+              : '—'}
+          </span>
+          <button
+            className="btn-install"
+            onClick={() => void handleClearCache()}
+            disabled={cacheClearing || !cacheInfo || cacheInfo.count === 0}
+          >
+            {cacheClearing ? t('settings.cache_clearing') : t('settings.cache_clear')}
+          </button>
         </div>
       </section>
 

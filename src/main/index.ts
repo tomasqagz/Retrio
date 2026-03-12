@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron'
+import { app, BrowserWindow, shell, ipcMain, dialog, protocol, net } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { searchGames, getPopularGames, getGameById, invalidateTokenCache } from './igdb'
@@ -14,11 +14,20 @@ import {
   setNoRom,
   addPlayTime,
   toggleFavorite,
+  clearSearchCache,
+  getSearchCacheInfo,
 } from './database'
 import { startArchiveDownload, pauseArchiveDownload, resumeArchiveDownload, cancelArchiveDownload, findRomsOnArchive } from './archiveorg'
 import { destroyClient } from './torrent'
 import { getEmulatorStatus, installEmulator, launchGame, deleteEmulator, openEmulator } from './emulator'
+import { cacheGameImages, localizeGameUrls, clearImageCache, gameImageDir } from './imageCache'
 import type { Game, Platform, RomOption } from '../shared/types'
+
+// Registrar esquema custom ANTES de app.whenReady()
+protocol.registerSchemesAsPrivileged([{
+  scheme: 'retrio-img',
+  privileges: { secure: true, standard: true, supportFetchAPI: true, bypassCSP: true },
+}])
 
 const isDev = !!(process as NodeJS.Process & { defaultApp?: boolean }).defaultApp
 
@@ -66,7 +75,39 @@ ipcMain.handle('igdb:popular', async (_e, { platform, sortBy, offset, genreId }:
 })
 
 ipcMain.handle('igdb:game', async (_e, { id }: { id: number }) => {
-  return getGameById(id)
+  let game: Game | null = null
+
+  try {
+    game = await getGameById(id)
+  } catch {
+    // Sin conexión: intentar con datos de biblioteca como fallback
+    game = getGameFromLibrary(id)
+  }
+
+  if (!game) return null
+
+  if (isInLibrary(game.id)) {
+    // Cachear screenshots si aún no están descargadas
+    const dir = gameImageDir(game.id)
+    const firstScreenshot = path.join(dir, 'screenshot_0.jpg')
+    if (game.screenshots?.length && !fs.existsSync(firstScreenshot)) {
+      cacheGameImages(game)
+    }
+    return localizeGameUrls(game)
+  }
+
+  return game
+})
+
+// ── Cache IPC ─────────────────────────────────────────────────────────────────
+
+ipcMain.handle('cache:clear', () => {
+  clearSearchCache()
+  clearImageCache()
+})
+
+ipcMain.handle('cache:info', () => {
+  return getSearchCacheInfo()
 })
 
 // ── Folder IPC ────────────────────────────────────────────────────────────────
@@ -97,15 +138,17 @@ ipcMain.handle('folder:get-defaults', () => ({
 // ── Library IPC ───────────────────────────────────────────────────────────────
 
 ipcMain.handle('library:get', () => {
-  return getLibrary()
+  return getLibrary().map(localizeGameUrls)
 })
 
 ipcMain.handle('library:get-one', (_e, { id }: { id: number }) => {
-  return getGameFromLibrary(id)
+  const game = getGameFromLibrary(id)
+  return game ? localizeGameUrls(game) : null
 })
 
 ipcMain.handle('library:add', (_e, game: Game) => {
   addToLibrary(game)
+  cacheGameImages(game) // descarga cover en background
 })
 
 ipcMain.handle('library:remove', (_e, { id }: { id: number }) => {
@@ -226,6 +269,18 @@ ipcMain.handle('config:set-igdb', (_e, { clientId, clientSecret }: { clientId: s
 // ── App lifecycle ─────────────────────────────────────────────────────────────
 
 app.whenReady().then(() => {
+  // Servir imágenes cacheadas localmente vía retrio-img://{gameId}/{filename}
+  protocol.handle('retrio-img', (request) => {
+    const parsed = new URL(request.url)
+    const filePath = path.join(
+      app.getPath('userData'),
+      'image-cache',
+      parsed.hostname,
+      parsed.pathname,
+    )
+    return net.fetch(`file://${filePath.replace(/\\/g, '/')}`)
+  })
+
   createWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

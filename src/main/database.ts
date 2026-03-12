@@ -3,6 +3,8 @@ import { app } from 'electron'
 import path from 'path'
 import type { Game } from '../shared/types'
 
+const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60 // 1 semana
+
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
 let db: Database.Database
@@ -49,6 +51,16 @@ function migrate(db: Database.Database): void {
   try { db.exec(`ALTER TABLE games ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0`) } catch { /* already exists */ }
   // Reset any downloads that were in progress when the app was last closed
   db.exec(`DELETE FROM games WHERE downloading = 1 AND downloaded = 0`)
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS search_cache (
+      cache_key  TEXT    PRIMARY KEY,
+      data       TEXT    NOT NULL,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+  `)
+  // Borrar entradas expiradas al iniciar
+  db.exec(`DELETE FROM search_cache WHERE created_at + ${CACHE_TTL_SECONDS} < unixepoch()`)
 }
 
 // ── Row type (SQLite returns plain objects) ───────────────────────────────────
@@ -195,4 +207,53 @@ export function isInLibrary(id: number): boolean {
     .prepare('SELECT id FROM games WHERE id = ?')
     .get(id)
   return row !== undefined
+}
+
+// ── Search Cache ───────────────────────────────────────────────────────────────
+
+export function getCachedSearch(key: string): Game[] | null {
+  const row = getDb()
+    .prepare('SELECT data, created_at FROM search_cache WHERE cache_key = ?')
+    .get(key) as { data: string; created_at: number } | undefined
+  if (!row) return null
+  if (row.created_at + CACHE_TTL_SECONDS < Math.floor(Date.now() / 1000)) {
+    getDb().prepare('DELETE FROM search_cache WHERE cache_key = ?').run(key)
+    return null
+  }
+  return JSON.parse(row.data) as Game[]
+}
+
+export function setCachedSearch(key: string, games: Game[]): void {
+  getDb()
+    .prepare('INSERT OR REPLACE INTO search_cache (cache_key, data) VALUES (?, ?)')
+    .run(key, JSON.stringify(games))
+}
+
+export function clearSearchCache(): void {
+  getDb().prepare('DELETE FROM search_cache').run()
+}
+
+export function getSearchCacheInfo(): { count: number; sizeBytes: number } {
+  const row = getDb()
+    .prepare('SELECT COUNT(*) as count, COALESCE(SUM(LENGTH(data)), 0) as size FROM search_cache')
+    .get() as { count: number; size: number }
+  return { count: row.count, sizeBytes: row.size }
+}
+
+export function getCachedGame(igdbId: number): Game | null {
+  const row = getDb()
+    .prepare('SELECT data, created_at FROM search_cache WHERE cache_key = ?')
+    .get(`game:${igdbId}`) as { data: string; created_at: number } | undefined
+  if (!row) return null
+  if (row.created_at + CACHE_TTL_SECONDS < Math.floor(Date.now() / 1000)) {
+    getDb().prepare('DELETE FROM search_cache WHERE cache_key = ?').run(`game:${igdbId}`)
+    return null
+  }
+  return JSON.parse(row.data) as Game
+}
+
+export function setCachedGame(igdbId: number, game: Game): void {
+  getDb()
+    .prepare('INSERT OR REPLACE INTO search_cache (cache_key, data) VALUES (?, ?)')
+    .run(`game:${igdbId}`, JSON.stringify(game))
 }

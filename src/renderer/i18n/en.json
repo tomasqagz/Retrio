@@ -147,7 +147,14 @@
     "igdb_saved": "Credentials saved successfully",
     "igdb_error": "Error saving credentials",
     "igdb_status_ok": "Credentials configured",
-    "igdb_status_missing": "No credentials — search will not work"
+    "igdb_status_missing": "No credentials — search will not work",
+    "cache_title": "Search cache",
+    "cache_desc": "Search results are saved locally to avoid unnecessary API calls. The cache expires automatically after 1 week.",
+    "cache_info": "{{count}} searches saved · {{size}}",
+    "cache_clear": "Clear cache",
+    "cache_clearing": "Clearing...",
+    "cache_cleared": "Cache cleared successfully",
+    "cache_error": "Error clearing the cache"
   },
   "gamecard": {
     "play": "Play",
