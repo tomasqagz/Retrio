@@ -5,8 +5,8 @@
   "main": "electron-main.cjs",
   "scripts": {
     "dev": "vite --config vite.config.ts",
-    "electron": "tsc -p tsconfig.preload.json && tsc -p tsconfig.node.json && node scripts/launch-electron.cjs",
-    "dev:electron": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && npm run electron\"",
+    "electron": "tsc -p tsconfig.preload.json && tsc -p tsconfig.node.json && concurrently --kill-others --success first \"vite --config vite.config.ts\" \"wait-on http://localhost:5173 && node scripts/launch-electron.cjs\"",
+    "dev:electron": "npm run electron",
     "build": "tsc -p tsconfig.node.json && vite build --config vite.config.ts",
     "dist": "npm run build && electron-builder",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.node.json --noEmit"
@@ -17,8 +17,11 @@
   "dependencies": {
     "better-sqlite3": "^12.6.2",
     "dotenv": "^17.3.1",
+    "flag-icons": "^7.5.0",
+    "i18next": "^25.8.17",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "react-i18next": "^16.5.6",
     "react-router-dom": "^7.13.1",
     "webtorrent": "^1.9.7"
   },

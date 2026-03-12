@@ -90,21 +90,19 @@ Launcher de juegos retro estilo Stremio. El usuario busca un juego, lo descarga 
 
 ### Esenciales (MVP)
 - [x] Búsqueda de juegos con metadata automática (portadas, descripción) — **IGDB API**
-- [ ] Descarga via torrent con WebTorrent
-- [ ] Detección automática de consola por extensión de archivo
-- [ ] Instalación automática de emuladores (primera vez)
-- [ ] Biblioteca personal de juegos descargados — **SQLite**
-- [ ] Lanzar juego con un click
+- [x] Descarga via torrent con WebTorrent
+- [x] Detección automática de consola por extensión de archivo
+- [x] Instalación automática de emuladores (primera vez)
+- [x] Biblioteca personal de juegos descargados — **SQLite**
+- [x] Lanzar juego con un click
 
 ### Segunda iteración
-- [ ] Filtro por consola / plataforma
-- [ ] Mapeador de controles visual
-- [ ] Progreso de descarga en tiempo real
-- [ ] Verificación de hash contra No-Intro/Redump
-- [ ] Configuración por juego (resolución, filtros de imagen)
+- [x] Filtro por consola / plataforma
+- [x] Progreso de descarga en tiempo real
+- [?] Verificación de hash contra No-Intro/Redump
 
 ### Futuro
-- [ ] Sección de abandonware PC (Archive.org)
+- [?] Sección de abandonware PC (Archive.org)
 - [ ] Saves en la nube
 - [ ] Multijugador online via NetPlay (RetroArch lo soporta)
 
@@ -139,6 +137,7 @@ retrio/
 │   └── shared/                # Tipos compartidos main/renderer
 │       └── types.ts           # Interfaces: Game, Platform, RetrioAPI, etc.
 ├── emulators/                 # Emuladores portables (se descargan automáticamente)
+|   └── bios/                  # Bios que necesitan los emuladores
 ├── roms/                      # ROMs descargadas por el usuario
 ├── tsconfig.json              # Config TypeScript para el renderer
 ├── tsconfig.node.json         # Config TypeScript para el main process
@@ -205,5 +204,3 @@ npm run typecheck
 - Las ROMs de consolas retro están en zona gris legal pero culturalmente aceptadas para consolas discontinuadas
 - Usar solo Archive.org y fuentes verificables como fuentes de torrents
 - Verificar siempre el hash SHA1 antes de ejecutar cualquier archivo
-- No incluir juegos de PC modernos crackeados (riesgo legal y de seguridad)
-- El nombre del dominio **retrio.io** podría estar disponible (verificar)

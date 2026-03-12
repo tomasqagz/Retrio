@@ -1,42 +1,47 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import GameCard from '../components/GameCard'
 import GameDetail from '../components/GameDetail'
+import { toast } from '../components/Toaster'
+import { confirm } from '../components/ConfirmDialog'
 import type { Game, Platform, SortBy } from '../../shared/types'
+import { platformLabel } from '../utils/platform'
 import './Search.css'
 
-const PLATFORMS: Array<Platform | 'Todas'> = ['Todas', 'NES', 'SNES', 'N64', 'Sega Genesis', 'PS1', 'PS2']
+const PLATFORMS: Array<Platform | 'Todas'> = ['Todas', 'NES', 'SNES', 'N64', 'Sega Genesis', 'Sega Saturn', 'PS1', 'PS2']
 
 const PLATFORM_COLORS: Partial<Record<Platform, string>> = {
   NES: '#e53e3e',
   SNES: '#7b2d8b',
   'Sega Genesis': '#1a56db',
+  'Sega Saturn':  '#ec4899',
   PS1: '#6b7280',
   PS2: '#0ea5e9',
   N64: '#008a00',
 }
 
-const GENRES: Array<{ id: number; label: string }> = [
-  { id:  4, label: 'Peleas' },
-  { id:  5, label: 'Shooter' },
-  { id:  8, label: 'Plataformas' },
-  { id:  9, label: 'Puzzle' },
-  { id: 10, label: 'Carreras' },
-  { id: 12, label: 'RPG' },
-  { id: 13, label: 'Simulador' },
-  { id: 14, label: 'Deportes' },
-  { id: 15, label: 'Estrategia' },
-  { id: 25, label: 'Hack & Slash' },
-  { id: 31, label: 'Aventura' },
-  { id: 33, label: 'Arcade' },
+const GENRES: Array<{ id: number; labelKey: string }> = [
+  { id:  4, labelKey: 'search.genre_fights' },
+  { id:  5, labelKey: 'search.genre_shooter' },
+  { id:  8, labelKey: 'search.genre_platforms' },
+  { id:  9, labelKey: 'search.genre_puzzle' },
+  { id: 10, labelKey: 'search.genre_racing' },
+  { id: 12, labelKey: 'search.genre_rpg' },
+  { id: 13, labelKey: 'search.genre_simulator' },
+  { id: 14, labelKey: 'search.genre_sports' },
+  { id: 15, labelKey: 'search.genre_strategy' },
+  { id: 25, labelKey: 'search.genre_hack_slash' },
+  { id: 31, labelKey: 'search.genre_adventure' },
+  { id: 33, labelKey: 'search.genre_arcade' },
 ]
 
-const SORT_OPTIONS: Array<{ value: SortBy; label: string }> = [
-  { value: 'relevance', label: 'Relevancia' },
-  { value: 'rating',    label: 'Puntuación' },
-  { value: 'popular',   label: 'Popularidad' },
-  { value: 'newest',    label: 'Más recientes' },
-  { value: 'oldest',    label: 'Más antiguos' },
+const SORT_OPTIONS: Array<{ value: SortBy; labelKey: string }> = [
+  { value: 'relevance', labelKey: 'search.sort_relevance' },
+  { value: 'rating',    labelKey: 'search.sort_rating' },
+  { value: 'popular',   labelKey: 'search.sort_popular' },
+  { value: 'newest',    labelKey: 'search.sort_newest' },
+  { value: 'oldest',    labelKey: 'search.sort_oldest' },
 ]
 
 const IS_ELECTRON = Boolean(window.retrio)
@@ -78,6 +83,7 @@ async function fetchPopular(platform: Platform | 'Todas', sortBy: SortBy, offset
 }
 
 export default function Search() {
+  const { t } = useTranslation()
   const [searchParams, setSearchParams] = useSearchParams()
   const [query, setQuery] = useState(searchParams.get('q') ?? '')
   const [activePlatform, setActivePlatform] = useState<Platform | 'Todas'>(
@@ -92,6 +98,8 @@ export default function Search() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedGame, setSelectedGame] = useState<Game | null>(null)
+  const [libraryMap, setLibraryMap] = useState<Map<number, Game>>(new Map())
+  const handleDetailClose = useCallback(() => setSelectedGame(null), [])
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const runSearch = useCallback(async (q: string, platform: Platform | 'Todas', sort: SortBy, p = 1, resetMax = false, genre: number | null = null) => {
@@ -110,13 +118,14 @@ export default function Search() {
         return more ? Math.max(base, p + 1) : Math.max(base, p)
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido')
+      const msg = err instanceof Error ? err.message : t('search.unknown_error')
+      setError(msg.startsWith('IGDB_AUTH_ERROR:') ? 'IGDB_AUTH_ERROR' : msg)
       setResults([])
       setHasMore(false)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   function handlePageChange(p: number) {
     setPage(p)
@@ -126,7 +135,28 @@ export default function Search() {
 
   useEffect(() => {
     runSearch(query, activePlatform, sortBy, 1, true, null)
+    if (IS_ELECTRON) {
+      void window.retrio.getLibrary().then((games) => setLibraryMap(new Map(games.map((g) => [g.id, g]))))
+    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleAdd(game: Game) {
+    if (!IS_ELECTRON) return
+    await window.retrio.addToLibrary({ ...game, downloaded: false, downloading: false })
+    setLibraryMap((prev) => new Map(prev).set(game.id, { ...game, downloaded: false, downloading: false }))
+    toast(t('search.added', { title: game.title }), 'success')
+  }
+
+  async function handleRemove(game: Game) {
+    if (!IS_ELECTRON) return
+    const libGame = libraryMap.get(game.id)
+    if (libGame?.downloaded) {
+      if (!await confirm(t('search.remove_confirm_installed', { title: game.title }))) return
+    }
+    await window.retrio.removeFromLibrary(game.id)
+    setLibraryMap((prev) => { const next = new Map(prev); next.delete(game.id); return next })
+    toast(t('search.removed', { title: game.title }), 'info')
+  }
 
   function handleQueryChange(e: React.ChangeEvent<HTMLInputElement>) {
     const val = e.target.value
@@ -165,16 +195,27 @@ export default function Search() {
     runSearch('', activePlatform, sortBy, 1, true, genreId)
   }
 
+  const platformAllLabel = t('search.platform_all')
+
+  function getResultsLabel() {
+    if (query) {
+      const key = results.length !== 1 ? 'search.results_query_plural' : 'search.results_query'
+      return t(key, { count: results.length, query, page })
+    }
+    if (activePlatform === 'Todas') return t('search.results_popular_all', { page })
+    return t('search.results_popular', { platform: activePlatform, page })
+  }
+
   return (
     <div className="page search-page">
       <div className="search-header">
-        <h1 className="search-title">Buscar juegos</h1>
+        <h1 className="search-title">{t('search.title')}</h1>
         <div className="search-box">
           <SearchInputIcon />
           <input
             type="text"
             className="search-input"
-            placeholder="Título del juego..."
+            placeholder={t('search.placeholder')}
             value={query}
             onChange={handleQueryChange}
             autoFocus
@@ -190,7 +231,8 @@ export default function Search() {
       <div className="search-filters">
         <div className="filter-platforms">
           {PLATFORMS.map((p) => {
-            const color = p !== 'Todas' ? PLATFORM_COLORS[p] : undefined
+            const color = p !== 'Todas' ? PLATFORM_COLORS[p as Platform] : undefined
+            const label = p === 'Todas' ? platformAllLabel : platformLabel(p)
             return (
               <button
                 key={p}
@@ -199,21 +241,21 @@ export default function Search() {
                 onClick={() => handlePlatformChange(p)}
               >
                 {color && <span className="filter-chip-dot" style={{ background: color }} />}
-                {p}
+                {label}
               </button>
             )
           })}
         </div>
         <div className="filter-selects">
           <select className="sort-select" value={genreId ?? ''} onChange={handleGenreChange}>
-            <option value="">Todos los géneros</option>
+            <option value="">{t('search.all_genres')}</option>
             {GENRES.map((g) => (
-              <option key={g.id} value={g.id}>{g.label}</option>
+              <option key={g.id} value={g.id}>{t(g.labelKey)}</option>
             ))}
           </select>
           <select className="sort-select" value={sortBy} onChange={handleSortChange}>
             {SORT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
+              <option key={o.value} value={o.value}>{t(o.labelKey)}</option>
             ))}
           </select>
         </div>
@@ -222,38 +264,55 @@ export default function Search() {
       <div className="search-results">
         {error && (
           <div className="search-error">
-            <p className="search-error-title">Error al conectar con IGDB</p>
-            <p className="search-error-msg">{error}</p>
+            {error === 'IGDB_AUTH_ERROR' ? (
+              <>
+                <p className="search-error-title">{t('search.error_credentials_title')}</p>
+                <p className="search-error-msg">{t('search.error_credentials_msg')}</p>
+                <Link className="search-error-settings-link" to="/settings">{t('search.error_credentials_link')}</Link>
+              </>
+            ) : (
+              <>
+                <p className="search-error-title">{t('search.error_title')}</p>
+                <p className="search-error-msg">{error}</p>
+              </>
+            )}
           </div>
         )}
 
         {loading && (
           <div className="search-state">
             <div className="spinner" />
-            <p>Buscando...</p>
+            <p>{t('search.loading')}</p>
           </div>
         )}
 
         {!loading && !error && results.length === 0 && query && (
           <div className="search-state">
-            <p className="search-empty-title">Sin resultados para "{query}"</p>
-            <p className="search-empty-sub">Intenta con otro título o consola</p>
+            <p className="search-empty-title">{t('search.no_results_title', { query })}</p>
+            <p className="search-empty-sub">{t('search.no_results_sub')}</p>
           </div>
         )}
 
         {!loading && !error && results.length > 0 && (
           <>
-            <p className="search-count">
-              {query
-                ? `${results.length} resultado${results.length !== 1 ? 's' : ''} para "${query}" — página ${page}`
-                : `${activePlatform === 'Todas' ? 'Populares' : activePlatform} — página ${page}`}
-            </p>
+            <p className="search-count">{getResultsLabel()}</p>
             <div className="games-grid">
-              {results.map((game) => (
+              {results
+                .slice()
+                .sort((a, b) => {
+                  const aNoRom = libraryMap.get(a.id)?.noRom ?? false
+                  const bNoRom = libraryMap.get(b.id)?.noRom ?? false
+                  return aNoRom === bNoRom ? 0 : aNoRom ? 1 : -1
+                })
+                .map((game) => (
                 <GameCard
                   key={game.id}
                   game={game}
                   onClick={() => setSelectedGame(game)}
+                  onAdd={IS_ELECTRON ? handleAdd : undefined}
+                  onRemoveFromSearch={IS_ELECTRON ? handleRemove : undefined}
+                  inLibrary={libraryMap.has(game.id)}
+                  noRom={libraryMap.get(game.id)?.noRom}
                 />
               ))}
             </div>
@@ -277,7 +336,7 @@ export default function Search() {
       {selectedGame && (
         <GameDetail
           game={selectedGame}
-          onClose={() => setSelectedGame(null)}
+          onClose={handleDetailClose}
         />
       )}
     </div>

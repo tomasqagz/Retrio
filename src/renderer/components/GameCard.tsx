@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Game, Platform } from '../../shared/types'
 import './GameCard.css'
 
@@ -6,6 +7,7 @@ const PLATFORM_COLORS: Record<Platform, string> = {
   NES: '#e53e3e',
   SNES: '#7b2d8b',
   'Sega Genesis': '#1a56db',
+  'Sega Saturn':  '#ec4899',
   PS1: '#6b7280',
   PS2: '#0ea5e9',
   N64: '#008a00',
@@ -16,11 +18,16 @@ interface GameCardProps {
   game: Game
   onClick?: (game: Game) => void
   onPlay?: (game: Game) => void
-  onDownload?: (game: Game) => void
   onRemove?: (game: Game) => void
+  onAdd?: (game: Game) => void
+  onRemoveFromSearch?: (game: Game) => void
+  inLibrary?: boolean
+  grayscale?: boolean
+  noRom?: boolean
 }
 
-export default function GameCard({ game, onClick, onPlay, onDownload, onRemove }: GameCardProps) {
+export default function GameCard({ game, onClick, onPlay, onRemove, onAdd, onRemoveFromSearch, inLibrary, grayscale, noRom }: GameCardProps) {
+  const { t } = useTranslation()
   const { title, platform, coverUrl, year, rating, downloaded, downloading, progress } = game
   const platformColor = PLATFORM_COLORS[platform] ?? '#555'
 
@@ -31,7 +38,7 @@ export default function GameCard({ game, onClick, onPlay, onDownload, onRemove }
 
   return (
     <div className="game-card" onClick={() => onClick?.(game)}>
-      <div className="game-card-cover">
+      <div className={`game-card-cover${(grayscale || noRom) ? ' game-card-cover--grayscale' : ''}`}>
         {coverUrl ? (
           <img src={coverUrl} alt={title} loading="lazy" />
         ) : (
@@ -48,6 +55,18 @@ export default function GameCard({ game, onClick, onPlay, onDownload, onRemove }
           <div className="game-card-rating">★ {rating}</div>
         )}
 
+        {onAdd && (
+          <button
+            className={`game-card-add-btn ${inLibrary ? 'game-card-add-btn--added' : ''}${inLibrary && onRemoveFromSearch ? ' game-card-add-btn--removable' : ''}`}
+            title={inLibrary ? t('gamecard.remove_hint') : t('gamecard.add_to_library')}
+            onClick={(e) => { e.stopPropagation(); if (inLibrary && onRemoveFromSearch) onRemoveFromSearch(game); else if (!inLibrary) onAdd(game) }}
+          >
+            {inLibrary
+              ? <><span className="game-card-add-btn-check"><CheckIcon /></span><span className="game-card-add-btn-remove"><MinusIcon /></span></>
+              : <span style={{ fontSize: '20px', lineHeight: 1, marginTop: '-1px' }}>+</span>}
+          </button>
+        )}
+
         <div className="game-card-hover-overlay">
           {downloaded ? (
             <button
@@ -55,21 +74,32 @@ export default function GameCard({ game, onClick, onPlay, onDownload, onRemove }
               onClick={(e) => handleActionClick(e, onPlay)}
             >
               <PlayIcon />
-              <span>Jugar</span>
+              <span>{t('gamecard.play')}</span>
             </button>
           ) : (
-            <span className="game-card-hint">Ver detalles</span>
-          )}
-          {onRemove && (
-            <button
-              className="game-card-remove-btn"
-              title="Quitar de la biblioteca"
-              onClick={(e) => handleActionClick(e, onRemove)}
-            >
-              <TrashIcon />
-            </button>
+            <span className="game-card-hint">{t('gamecard.view_details')}</span>
           )}
         </div>
+
+        {onRemove && (
+          <button
+            className="game-card-remove-btn"
+            title={t('gamecard.remove_hint')}
+            onClick={(e) => handleActionClick(e, onRemove)}
+          >
+            <TrashIcon />
+          </button>
+        )}
+
+        {noRom && (
+          <div className="game-card-no-rom-badge">{t('gamecard.no_rom')}</div>
+        )}
+
+        {game.favorite && (
+          <div className="game-card-favorite-badge">
+            <HeartFilledIcon />
+          </div>
+        )}
       </div>
 
       {downloading && (
@@ -105,12 +135,34 @@ function TrashIcon() {
   )
 }
 
-function DownloadIcon() {
+function HeartFilledIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-      <polyline points="7 10 12 15 17 10" />
-      <line x1="12" y1="15" x2="12" y2="3" />
+    <svg viewBox="0 0 24 24" fill="currentColor">
+      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
     </svg>
   )
 }
+function BookmarkIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+    </svg>
+  )
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  )
+}
+
+function MinusIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  )
+}
+
