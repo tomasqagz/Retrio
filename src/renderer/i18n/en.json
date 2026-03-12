@@ -21,7 +21,26 @@
     "recent": "Recently added",
     "view_library": "View library",
     "popular": "Popular",
-    "view_all": "View all"
+    "view_all": "View all",
+    "last_played": "Recently played",
+    "favorites": "Favorites",
+    "no_last_played": "You haven't played any games yet",
+    "no_favorites": "You don't have any favorite games yet",
+    "played_today": "Today",
+    "played_yesterday": "Yesterday",
+    "played_days_ago": "{{n}} days ago",
+    "stats_games": "Games",
+    "stats_hours": "Hours played",
+    "stats_installed": "Installed",
+    "stats_favorites": "Favorites",
+    "stats_storage": "Storage",
+    "stats_by_platform": "By console",
+    "most_played": "Most played",
+    "view_recent": "Recent",
+    "view_most_played": "Most played",
+    "stats_view_count": "Games",
+    "stats_view_storage": "Storage",
+    "stats_view_playtime": "Hours"
   },
   "library": {
     "title": "My library",
@@ -202,6 +221,18 @@
     "cancel_confirm": "Cancel download of \"{{title}}\"?",
     "dismiss_title": "Dismiss notification",
     "downloaded_mb": "{{mb}} MB downloaded"
+  },
+  "onboarding": {
+    "welcome_title": "Welcome to Retrio",
+    "welcome_prefix": "Welcome to",
+    "welcome_desc": "Your retro game library. Search, download and play in seconds. First, set up the IGDB API to enable game search.",
+    "setup_igdb": "Set up IGDB",
+    "skip": "Skip for now",
+    "igdb_title": "Set up the IGDB API",
+    "igdb_desc": "Retrio uses IGDB to fetch game info and cover art. You need to create a free app on the Twitch developer portal to get your credentials.",
+    "save_and_continue": "Save and continue",
+    "saving": "Saving...",
+    "back": "← Back"
   },
   "app": {
     "download_complete": "Download complete — game ready to play",

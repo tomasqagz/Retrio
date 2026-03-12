@@ -21,7 +21,26 @@
     "recent": "Últimos añadidos",
     "view_library": "Ver biblioteca",
     "popular": "Populares",
-    "view_all": "Ver todos"
+    "view_all": "Ver todos",
+    "last_played": "Últimos jugados",
+    "favorites": "Favoritos",
+    "no_last_played": "Todavía no jugaste ningún juego",
+    "no_favorites": "No tenés juegos favoritos todavía",
+    "played_today": "Hoy",
+    "played_yesterday": "Ayer",
+    "played_days_ago": "Hace {{n}} días",
+    "stats_games": "Juegos",
+    "stats_hours": "Horas jugadas",
+    "stats_installed": "Instalados",
+    "stats_favorites": "Favoritos",
+    "stats_storage": "Almacenamiento",
+    "stats_by_platform": "Por consola",
+    "most_played": "Más jugados",
+    "view_recent": "Recientes",
+    "view_most_played": "Más jugados",
+    "stats_view_count": "Juegos",
+    "stats_view_storage": "Espacio",
+    "stats_view_playtime": "Horas"
   },
   "library": {
     "title": "Mi biblioteca",
@@ -202,6 +221,18 @@
     "cancel_confirm": "¿Cancelar la descarga de \"{{title}}\"?",
     "dismiss_title": "Cerrar notificación",
     "downloaded_mb": "{{mb}} MB descargados"
+  },
+  "onboarding": {
+    "welcome_title": "Bienvenido a Retrio",
+    "welcome_prefix": "Bienvenido a",
+    "welcome_desc": "Tu biblioteca de juegos retro. Buscá, descargá y jugá en segundos. Primero, configurá la API de IGDB para habilitar la búsqueda de juegos.",
+    "setup_igdb": "Configurar IGDB",
+    "skip": "Saltar por ahora",
+    "igdb_title": "Configurá la API de IGDB",
+    "igdb_desc": "Retrio usa IGDB para obtener información y portadas de juegos. Necesitás crear una app gratuita en el portal de Twitch para obtener las credenciales.",
+    "save_and_continue": "Guardar y continuar",
+    "saving": "Guardando...",
+    "back": "← Volver"
   },
   "app": {
     "download_complete": "Descarga completa — juego listo para jugar",
