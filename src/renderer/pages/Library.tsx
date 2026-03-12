@@ -107,7 +107,7 @@ export default function Library() {
     }
     if (!await confirm(t('library.play_confirm', { title: game.title }), { confirmLabel: t('gamecard.play'), danger: false })) return
     try {
-      await window.retrio.launchGame(game.romPath, game.platform)
+      await window.retrio.launchGame(game.romPath, game.platform, game.id)
     } catch (err) {
       const raw = err instanceof Error ? err.message : t('library.launch_error')
       const msg = raw.includes(': Error: ') ? raw.split(': Error: ').pop()! : raw

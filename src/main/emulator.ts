@@ -369,7 +369,7 @@ export async function openEmulator(id: string): Promise<void> {
   child.unref()
 }
 
-export async function launchGame(romPath: string, platform: Platform): Promise<void> {
+export async function launchGame(romPath: string, platform: Platform, onExit?: (seconds: number) => void): Promise<void> {
   const cfg = EMULATOR_CONFIGS.find((c) => c.platforms.includes(platform))
   if (!cfg) throw new Error(`No hay emulador configurado para: ${platform}`)
 
@@ -419,6 +419,8 @@ export async function launchGame(romPath: string, platform: Platform): Promise<v
   let stderrOutput = ''
   child.stderr?.on('data', (chunk: Buffer) => { stderrOutput += chunk.toString() })
 
+  const sessionStart = Date.now()
+
   // Resolve after 3 s (process still running → assume OK).
   // Reject immediately if the process exits before that (crash / bad core / bad ROM).
   return new Promise((resolve, reject) => {
@@ -428,6 +430,13 @@ export async function launchGame(romPath: string, platform: Platform): Promise<v
       if (!settled) {
         settled = true
         child.unref()
+        // Track play time: fire onExit when the process eventually closes
+        if (onExit) {
+          child.once('close', () => {
+            const seconds = Math.round((Date.now() - sessionStart) / 1000)
+            onExit(seconds)
+          })
+        }
         resolve()
       }
     }, 3000)

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import GameCard from '../components/GameCard'
 import GameDetail from '../components/GameDetail'
 import { toast } from '../components/Toaster'
+import { confirm } from '../components/ConfirmDialog'
 import type { Game, Platform, SortBy } from '../../shared/types'
 import { platformLabel } from '../utils/platform'
 import './Search.css'
@@ -97,7 +98,7 @@ export default function Search() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedGame, setSelectedGame] = useState<Game | null>(null)
-  const [libraryIds, setLibraryIds] = useState<Set<number>>(new Set())
+  const [libraryMap, setLibraryMap] = useState<Map<number, Game>>(new Map())
   const handleDetailClose = useCallback(() => setSelectedGame(null), [])
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -117,7 +118,8 @@ export default function Search() {
         return more ? Math.max(base, p + 1) : Math.max(base, p)
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('search.unknown_error'))
+      const msg = err instanceof Error ? err.message : t('search.unknown_error')
+      setError(msg.startsWith('IGDB_AUTH_ERROR:') ? 'IGDB_AUTH_ERROR' : msg)
       setResults([])
       setHasMore(false)
     } finally {
@@ -134,15 +136,26 @@ export default function Search() {
   useEffect(() => {
     runSearch(query, activePlatform, sortBy, 1, true, null)
     if (IS_ELECTRON) {
-      void window.retrio.getLibrary().then((games) => setLibraryIds(new Set(games.map((g) => g.id))))
+      void window.retrio.getLibrary().then((games) => setLibraryMap(new Map(games.map((g) => [g.id, g]))))
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleAdd(game: Game) {
     if (!IS_ELECTRON) return
     await window.retrio.addToLibrary({ ...game, downloaded: false, downloading: false })
-    setLibraryIds((prev) => new Set(prev).add(game.id))
+    setLibraryMap((prev) => new Map(prev).set(game.id, { ...game, downloaded: false, downloading: false }))
     toast(t('search.added', { title: game.title }), 'success')
+  }
+
+  async function handleRemove(game: Game) {
+    if (!IS_ELECTRON) return
+    const libGame = libraryMap.get(game.id)
+    if (libGame?.downloaded) {
+      if (!await confirm(t('search.remove_confirm_installed', { title: game.title }))) return
+    }
+    await window.retrio.removeFromLibrary(game.id)
+    setLibraryMap((prev) => { const next = new Map(prev); next.delete(game.id); return next })
+    toast(t('search.removed', { title: game.title }), 'info')
   }
 
   function handleQueryChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -251,8 +264,18 @@ export default function Search() {
       <div className="search-results">
         {error && (
           <div className="search-error">
-            <p className="search-error-title">{t('search.error_title')}</p>
-            <p className="search-error-msg">{error}</p>
+            {error === 'IGDB_AUTH_ERROR' ? (
+              <>
+                <p className="search-error-title">{t('search.error_credentials_title')}</p>
+                <p className="search-error-msg">{t('search.error_credentials_msg')}</p>
+                <Link className="search-error-settings-link" to="/settings">{t('search.error_credentials_link')}</Link>
+              </>
+            ) : (
+              <>
+                <p className="search-error-title">{t('search.error_title')}</p>
+                <p className="search-error-msg">{error}</p>
+              </>
+            )}
           </div>
         )}
 
@@ -274,13 +297,22 @@ export default function Search() {
           <>
             <p className="search-count">{getResultsLabel()}</p>
             <div className="games-grid">
-              {results.map((game) => (
+              {results
+                .slice()
+                .sort((a, b) => {
+                  const aNoRom = libraryMap.get(a.id)?.noRom ?? false
+                  const bNoRom = libraryMap.get(b.id)?.noRom ?? false
+                  return aNoRom === bNoRom ? 0 : aNoRom ? 1 : -1
+                })
+                .map((game) => (
                 <GameCard
                   key={game.id}
                   game={game}
                   onClick={() => setSelectedGame(game)}
                   onAdd={IS_ELECTRON ? handleAdd : undefined}
-                  inLibrary={libraryIds.has(game.id)}
+                  onRemoveFromSearch={IS_ELECTRON ? handleRemove : undefined}
+                  inLibrary={libraryMap.has(game.id)}
+                  noRom={libraryMap.get(game.id)?.noRom}
                 />
               ))}
             </div>
