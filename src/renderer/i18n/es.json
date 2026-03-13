@@ -10,6 +10,7 @@
     "search": "Buscar",
     "library": "Biblioteca",
     "downloads": "Descargas",
+    "emulators": "Emuladores",
     "settings": "Ajustes"
   },
   "home": {
@@ -117,7 +118,7 @@
     "custom_emulators_set": "Configurar",
     "custom_emulators_change": "Cambiar",
     "custom_emulators_remove": "Quitar emulador personalizado",
-    "custom_emulators_default": "Usando emulador de Retrio",
+    "custom_emulators_default": "Retrio: {{name}}",
     "installed": "Instalado",
     "installing": "Instalando...",
     "install": "Instalar",

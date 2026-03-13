@@ -474,7 +474,7 @@ export async function launchGame(romPath: string, platform: Platform, onExit?: (
         if (code !== 0 && code !== null) {
           const detail = stderrOutput.trim().split('\n').pop()?.trim()
           const suffix = detail ? `: ${detail}` : '. Verifica que el core y la ROM sean compatibles.'
-          reject(new Error(`${cfg.name} cerró con código ${code}${suffix}`))
+          reject(new Error(`El emulador cerró con código ${code}${suffix}`))
         } else {
           resolve()
         }

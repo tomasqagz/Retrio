@@ -10,6 +10,7 @@
     "search": "Search",
     "library": "Library",
     "downloads": "Downloads",
+    "emulators": "Emulators",
     "settings": "Settings"
   },
   "home": {
@@ -117,7 +118,7 @@
     "custom_emulators_set": "Configure",
     "custom_emulators_change": "Change",
     "custom_emulators_remove": "Remove custom emulator",
-    "custom_emulators_default": "Using Retrio's emulator",
+    "custom_emulators_default": "Retrio: {{name}}",
     "installed": "Installed",
     "installing": "Installing...",
     "install": "Install",
