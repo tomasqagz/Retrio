@@ -23,7 +23,7 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <img src="/RetrioIcon.png" className="sidebar-logo-icon" alt="Retrio" />
+        <img src="./RetrioIcon.png" className="sidebar-logo-icon" alt="Retrio" />
         <span className="sidebar-logo-text">Retrio</span>
       </div>
 

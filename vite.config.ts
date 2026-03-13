@@ -56,6 +56,7 @@ export default defineConfig({
   server: {
     port: 5173,
   },
+  base: './',
   build: {
     outDir: resolve(__dirname, 'dist/renderer'),
     emptyOutDir: true,
