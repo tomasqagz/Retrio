@@ -283,7 +283,7 @@ app.whenReady().then(() => {
   })
 
   createWindow()
-  if (!isDev) initUpdater()
+  initUpdater(isDev)
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
