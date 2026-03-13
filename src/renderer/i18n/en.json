@@ -10,6 +10,7 @@
     "search": "Search",
     "library": "Library",
     "downloads": "Downloads",
+    "emulators": "Emulators",
     "settings": "Settings"
   },
   "home": {
@@ -112,6 +113,12 @@
     "resolution_current": "Current",
     "emulators_title": "Emulators",
     "emulators_desc": "Retrio manages emulators automatically. You can install them manually if you prefer.",
+    "custom_emulators_title": "Custom emulators",
+    "custom_emulators_desc": "Use your own emulator for any platform. Retrio will use it instead of its own when launching games.",
+    "custom_emulators_set": "Configure",
+    "custom_emulators_change": "Change",
+    "custom_emulators_remove": "Remove custom emulator",
+    "custom_emulators_default": "Retrio: {{name}}",
     "installed": "Installed",
     "installing": "Installing...",
     "install": "Install",
@@ -138,6 +145,7 @@
     "updates_check": "Check for updates",
     "updates_download": "Download",
     "updates_install": "Restart & install",
+    "updates_data_safe": "Updating will not delete your data, library or settings.",
     "about_title": "About",
     "about_version": "Version",
     "about_engine": "Engine",

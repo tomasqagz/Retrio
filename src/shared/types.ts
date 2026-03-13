@@ -116,6 +116,12 @@ export interface RetrioAPI {
   getIgdbCredentials: () => Promise<{ clientId: string; clientSecret: string }>
   setIgdbCredentials: (clientId: string, clientSecret: string) => Promise<void>
 
+  // Emuladores personalizados
+  getCustomEmulatorPaths: () => Promise<Record<string, string>>
+  setCustomEmulatorPath: (platform: string, exePath: string) => Promise<void>
+  removeCustomEmulatorPath: (platform: string) => Promise<void>
+  openExeDialog: () => Promise<string | null>
+
   // Cache de búsqueda
   clearSearchCache: () => Promise<void>
   getSearchCacheInfo: () => Promise<{ count: number; sizeBytes: number }>

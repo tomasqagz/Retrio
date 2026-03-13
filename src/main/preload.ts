@@ -65,6 +65,12 @@ const api: RetrioAPI = {
   getIgdbCredentials: () => ipcRenderer.invoke('config:get-igdb'),
   setIgdbCredentials: (clientId: string, clientSecret: string) => ipcRenderer.invoke('config:set-igdb', { clientId, clientSecret }),
 
+  // Emuladores personalizados
+  getCustomEmulatorPaths: () => ipcRenderer.invoke('config:get-custom-emulators'),
+  setCustomEmulatorPath: (platform: string, exePath: string) => ipcRenderer.invoke('config:set-custom-emulator', { platform, exePath }),
+  removeCustomEmulatorPath: (platform: string) => ipcRenderer.invoke('config:remove-custom-emulator', { platform }),
+  openExeDialog: () => ipcRenderer.invoke('dialog:open-exe'),
+
   // Cache de búsqueda
   clearSearchCache: () => ipcRenderer.invoke('cache:clear'),
   getSearchCacheInfo: () => ipcRenderer.invoke('cache:info'),

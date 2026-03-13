@@ -12,6 +12,7 @@ import Home from './pages/Home'
 import Search from './pages/Search'
 import Library from './pages/Library'
 import Downloads from './pages/Downloads'
+import Emulators from './pages/Emulators'
 import Settings from './pages/Settings'
 import { EmuProgressContext, type EmuProgressMap } from './contexts/EmuProgressContext'
 import './styles/app.css'
@@ -64,7 +65,6 @@ export default function App() {
       setEmuProgress((prev) => {
         const next = { ...prev, [data.emulatorId]: data }
         if (data.total > 0 && data.received >= data.total) {
-          toast(t('settings.installed_emulator', { name: data.emulatorId }), 'success')
           setTimeout(() => {
             setEmuProgress((p) => { const n = { ...p }; delete n[data.emulatorId]; return n })
             setCompletedEmus((p) => ({ ...p, [data.emulatorId]: data }))
@@ -102,6 +102,7 @@ export default function App() {
               <Route path="/search" element={<Search />} />
               <Route path="/library" element={<Library />} />
               <Route path="/downloads" element={<Downloads />} />
+              <Route path="/emulators" element={<Emulators />} />
               <Route path="/settings" element={<Settings />} />
             </Routes>
           </main>
