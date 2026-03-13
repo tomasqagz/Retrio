@@ -45,7 +45,7 @@ function createWindow(): void {
     webPreferences: {
       preload: isDev
         ? path.join(process.cwd(), 'dist/preload/main/preload.js')
-        : path.join(__dirname, 'preload.js'),
+        : path.join(__dirname, '../../preload/main/preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
@@ -56,7 +56,7 @@ function createWindow(): void {
     win.loadURL('http://localhost:5173')
     win.webContents.openDevTools()
   } else {
-    win.loadFile(path.join(__dirname, '../../dist/renderer/index.html'))
+    win.loadFile(path.join(__dirname, '../../renderer/index.html'))
   }
 
   win.webContents.setWindowOpenHandler(({ url }) => {
