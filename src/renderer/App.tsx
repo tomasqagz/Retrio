@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import Toaster, { toast } from './components/Toaster'
 import ConfirmDialog from './components/ConfirmDialog'
@@ -69,7 +69,7 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <div className="app-layout">
         <UpdateBanner />
         <div className="app-main">
@@ -89,6 +89,6 @@ export default function App() {
       <Toaster />
       <ConfirmDialog />
       <RomPickerModal />
-    </BrowserRouter>
+    </HashRouter>
   )
 }

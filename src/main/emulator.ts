@@ -62,7 +62,7 @@ const EMULATOR_CONFIGS: EmulatorConfig[] = [
     install: {
       method: 'github',
       repo: 'stenzek/duckstation',
-      assetPattern: /windows.*x64.*\.zip$|x64.*windows.*\.zip$|duckstation.*windows.*\.zip$/i,
+      assetPattern: /duckstation-windows-x64-release\.zip$/i,
     },
     exeName: 'duckstation-qt',
     buildArgs: (romPath) => [romPath],
