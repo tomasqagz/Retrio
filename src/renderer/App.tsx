@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
@@ -25,6 +25,11 @@ export default function App() {
   const [phase, setPhase] = useState<Phase>('splash')
   const [isFirstRun, setIsFirstRun] = useState(false)
   const [emuProgress, setEmuProgress] = useState<EmuProgressMap>({})
+  const [completedEmus, setCompletedEmus] = useState<EmuProgressMap>({})
+
+  const dismissCompleted = useCallback((id: string) => {
+    setCompletedEmus((p) => { const n = { ...p }; delete n[id]; return n })
+  }, [])
 
   useEffect(() => {
     if (!IS_ELECTRON) { setPhase('ready'); return }
@@ -62,7 +67,8 @@ export default function App() {
           toast(t('settings.installed_emulator', { name: data.emulatorId }), 'success')
           setTimeout(() => {
             setEmuProgress((p) => { const n = { ...p }; delete n[data.emulatorId]; return n })
-          }, 1500)
+            setCompletedEmus((p) => ({ ...p, [data.emulatorId]: data }))
+          }, 800)
         }
         return next
       })
@@ -83,7 +89,7 @@ export default function App() {
   }
 
   return (
-    <EmuProgressContext.Provider value={emuProgress}>
+    <EmuProgressContext.Provider value={{ active: emuProgress, completed: completedEmus, dismissCompleted }}>
     <HashRouter>
       <div className="app-layout">
         <UpdateBanner />

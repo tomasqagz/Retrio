@@ -44,6 +44,7 @@ const [langOpen, setLangOpen] = useState(false)
   const [igdbHasCredentials, setIgdbHasCredentials] = useState(false)
   const [igdbSaving, setIgdbSaving] = useState(false)
   const [igdbExpanded, setIgdbExpanded] = useState(false)
+  const [showSecret, setShowSecret] = useState(false)
   const [cacheInfo, setCacheInfo] = useState<{ count: number; sizeBytes: number } | null>(null)
   const [cacheClearing, setCacheClearing] = useState(false)
   const [updateStatus, setUpdateStatus] = useState<
@@ -193,6 +194,7 @@ const [langOpen, setLangOpen] = useState(false)
         case 'available':
           setUpdateStatus('available')
           setUpdateVersion(event.version ?? '')
+          setLastChecked(() => { const d = new Date(); localStorage.setItem('retrio-last-update-check', d.toISOString()); return d })
           break
         case 'not-available':
           setUpdateStatus('up-to-date')
@@ -307,21 +309,29 @@ const handleLanguageChange = useCallback((code: string) => {
             </div>
             <div className="path-row">
               <label className="path-label">{t('settings.igdb_client_secret')}</label>
-              <div className="path-input-group">
+              <div className="path-input-group path-input-group--secret">
                 <input
-                  type="password"
+                  type={showSecret ? 'text' : 'password'}
                   className="path-input"
                   value={igdbClientSecret}
                   onChange={(e) => setIgdbClientSecret(e.target.value)}
                   placeholder="••••••••••••••••••••••••••••••••"
                   autoComplete="new-password"
                 />
+                <button
+                  type="button"
+                  className="secret-toggle"
+                  onClick={() => setShowSecret((v) => !v)}
+                  title={showSecret ? t('settings.hide_secret') : t('settings.show_secret')}
+                >
+                  {showSecret ? <EyeOffIcon /> : <EyeIcon />}
+                </button>
               </div>
             </div>
             <button
               className="btn-save-igdb"
               onClick={() => void handleSaveIgdb()}
-              disabled={igdbSaving || !igdbClientId.trim() || !igdbClientSecret.trim()}
+              disabled={igdbSaving || !igdbClientId.trim() || (!igdbClientSecret.trim() && !igdbHasCredentials)}
             >
               {t('settings.igdb_save')}
             </button>
@@ -357,7 +367,7 @@ const handleLanguageChange = useCallback((code: string) => {
               {updateStatus === 'available' && t('settings.updates_available_sub', { version: updateVersion })}
               {updateStatus === 'downloaded' && t('settings.updates_downloaded_sub', { version: updateVersion })}
               {updateStatus === 'error' && updateError && <span style={{ fontSize: '11px', opacity: 0.7 }}>{updateError}</span>}
-              {lastChecked && (updateStatus === 'up-to-date' || updateStatus === 'error') &&
+              {lastChecked && updateStatus !== 'checking' && updateStatus !== 'downloading' &&
                 t('settings.updates_last_checked', { time: formatLastChecked(lastChecked) })}
             </span>
             {updateStatus === 'downloading' && (
@@ -591,6 +601,25 @@ const handleLanguageChange = useCallback((code: string) => {
         </div>
       </section>
     </div>
+  )
+}
+
+function EyeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  )
+}
+
+function EyeOffIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+      <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
   )
 }
 

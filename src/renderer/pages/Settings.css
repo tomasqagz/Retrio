@@ -392,6 +392,31 @@
   flex: 1;
 }
 
+.path-input-group--secret {
+  position: relative;
+}
+
+.path-input-group--secret .path-input {
+  padding-right: 38px;
+}
+
+.secret-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.secret-toggle:hover {
+  color: var(--text-primary);
+}
+
 .path-input {
   flex: 1;
   padding: 8px 12px;

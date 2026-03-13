@@ -43,7 +43,7 @@ export default function Downloads() {
   const { t } = useTranslation()
   const [games, setGames] = useState<Game[]>([])
   const [progressMap, setProgressMap] = useState<Record<number, DownloadProgress>>({})
-  const emuProgress = useEmuProgress()
+  const { active: emuProgress, completed: completedEmus, dismissCompleted: dismissCompletedEmu } = useEmuProgress()
   const [paused, setPaused] = useState<Set<number>>(new Set())
   const knownIds = useRef(new Set<number>())
 
@@ -136,7 +136,7 @@ export default function Downloads() {
     <div className="page downloads-page">
       <h1 className="downloads-title">{t('downloads.title')}</h1>
 
-      {active.length === 0 && completed.length === 0 && Object.keys(emuProgress).length === 0 && (
+      {active.length === 0 && completed.length === 0 && Object.keys(emuProgress).length === 0 && Object.keys(completedEmus).length === 0 && (
         <div className="downloads-empty">
           <DownloadIcon className="downloads-empty-icon" />
           <p className="downloads-empty-title">{t('downloads.empty_title')}</p>
@@ -173,6 +173,40 @@ export default function Downloads() {
                 </div>
               )
             })}
+          </div>
+        </section>
+      )}
+
+      {Object.values(completedEmus).length > 0 && (
+        <section className="downloads-section">
+          <h2 className="downloads-section-title">{t('downloads.completed_section')}</h2>
+          <div className="downloads-list">
+            {Object.values(completedEmus).map((ep) => (
+              <div key={ep.emulatorId} className="dl-item dl-item--done">
+                <div className="dl-cover dl-cover--emu">🎮</div>
+                <div className="dl-body">
+                  <div className="dl-top">
+                    <span className="dl-name">{EMULATOR_NAMES[ep.emulatorId] ?? ep.emulatorId}</span>
+                    <span className="dl-platform">{t('downloads.emulator_label')}</span>
+                  </div>
+                  <div className="dl-bar-track">
+                    <div className="dl-bar-fill dl-bar-fill--done" style={{ width: '100%' }} />
+                  </div>
+                  <div className="dl-meta">
+                    <span className="dl-done-label">{t('downloads.done')}</span>
+                  </div>
+                </div>
+                <div className="dl-actions">
+                  <button
+                    className="dl-cancel"
+                    onClick={() => dismissCompletedEmu(ep.emulatorId)}
+                    title={t('downloads.dismiss_title')}
+                  >
+                    <XIcon />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       )}

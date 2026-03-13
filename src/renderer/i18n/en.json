@@ -148,6 +148,8 @@
     "error_installing": "Error installing {{name}}: {{error}}",
     "delete_confirm": "Remove {{name}}?",
     "deleted_emulator": "{{name}} removed",
+    "show_secret": "Show secret",
+    "hide_secret": "Hide secret",
     "igdb_title": "IGDB API",
     "igdb_desc": "To use Retrio you need a Twitch account and create an application in the developer portal. It's free and only takes a few minutes.",
     "igdb_link": "Open Twitch portal →",

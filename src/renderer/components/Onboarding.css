@@ -177,6 +177,40 @@
   border-color: var(--accent);
 }
 
+/* Language picker */
+.onb-lang-picker {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.onb-lang-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.onb-lang-btn:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.onb-lang-btn--active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--text-primary);
+}
+
 /* Buttons */
 .onb-btn-primary {
   width: 100%;

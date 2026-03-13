@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import i18n, { LANGUAGES } from '../i18n'
 import './Onboarding.css'
 
 const IS_ELECTRON = Boolean(window.retrio)
@@ -15,6 +16,13 @@ export default function Onboarding({ onDone }: Props) {
   const [clientSecret, setClientSecret] = useState('')
   const [saving, setSaving] = useState(false)
   const [guideOpen, setGuideOpen] = useState(true)
+  const [currentLang, setCurrentLang] = useState(i18n.language)
+
+  function handleLangChange(code: string) {
+    void i18n.changeLanguage(code)
+    localStorage.setItem('retrio-lang', code)
+    setCurrentLang(code)
+  }
 
   function handleSkip() {
     localStorage.setItem('retrio-onboarding-done', '1')
@@ -45,6 +53,20 @@ export default function Onboarding({ onDone }: Props) {
               <span className="onb-logo-io">IO</span>
             </h1>
             <p className="onb-desc">{t('onboarding.welcome_desc')}</p>
+
+            <div className="onb-lang-picker">
+              {LANGUAGES.map((lang) => (
+                <button
+                  key={lang.code}
+                  className={`onb-lang-btn ${currentLang === lang.code ? 'onb-lang-btn--active' : ''}`}
+                  onClick={() => handleLangChange(lang.code)}
+                >
+                  <span className={`fi fi-${lang.flagCode}`} />
+                  <span>{lang.label}</span>
+                </button>
+              ))}
+            </div>
+
             <button className="onb-btn-primary" onClick={() => setStep(2)}>
               {t('onboarding.setup_igdb')}
             </button>
