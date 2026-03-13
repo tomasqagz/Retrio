@@ -53,7 +53,12 @@ export default function App() {
     const offError = window.retrio.onDownloadError((data) => {
       toast(t('app.download_error', { message: data.message }), 'error')
     })
-    return () => { offDone(); offError() }
+    const offEmuProgress = window.retrio.onEmulatorInstallProgress((data) => {
+      if (data.total > 0 && data.received >= data.total) {
+        toast(t('settings.installed_emulator', { name: data.emulatorId }), 'success')
+      }
+    })
+    return () => { offDone(); offError(); offEmuProgress() }
   }, [t, phase])
 
   if (phase === 'splash') {

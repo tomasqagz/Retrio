@@ -51,16 +51,17 @@ const [langOpen, setLangOpen] = useState(false)
   >('idle')
   const [updateVersion, setUpdateVersion] = useState('')
   const [updatePercent, setUpdatePercent] = useState(0)
-  const [lastChecked, setLastChecked] = useState<Date | null>(null)
+  const [lastChecked, setLastChecked] = useState<Date | null>(() => {
+    const saved = localStorage.getItem('retrio-last-update-check')
+    return saved ? new Date(saved) : null
+  })
 
   useEffect(() => {
     if (!IS_ELECTRON) return
-    if (!emulatorsCache) {
-      void window.retrio.getEmulatorStatus().then((list) => {
-        emulatorsCache = list
-        setEmulators(list)
-      })
-    }
+    void window.retrio.getEmulatorStatus().then((list) => {
+      emulatorsCache = list
+      setEmulators(list)
+    })
     void window.retrio.getFolderDefaults().then(({ roms, emulators: emuPath, bios }) => {
       setRomsPath(roms)
       setEmulatorsPath(emuPath)
@@ -194,7 +195,7 @@ const [langOpen, setLangOpen] = useState(false)
           break
         case 'not-available':
           setUpdateStatus('up-to-date')
-          setLastChecked(new Date())
+          setLastChecked(() => { const d = new Date(); localStorage.setItem('retrio-last-update-check', d.toISOString()); return d })
           break
         case 'download-progress':
           setUpdateStatus('downloading')

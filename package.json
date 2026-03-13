@@ -20,6 +20,15 @@
     "directories": {
       "output": "dist/app"
     },
+    "win": {
+      "icon": "public/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowDirChange": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
     "publish": {
       "provider": "github",
       "owner": "tomasqagz",
