@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { confirm } from '../components/ConfirmDialog'
-import type { Game, DownloadProgress, EmulatorInstallProgress, Platform } from '../../shared/types'
+import type { Game, DownloadProgress, Platform } from '../../shared/types'
 import { platformLabel } from '../utils/platform'
+import { useEmuProgress } from '../contexts/EmuProgressContext'
 
 const PLATFORM_COLORS: Partial<Record<Platform, string>> = {
   NES: '#e53e3e',
@@ -42,7 +43,7 @@ export default function Downloads() {
   const { t } = useTranslation()
   const [games, setGames] = useState<Game[]>([])
   const [progressMap, setProgressMap] = useState<Record<number, DownloadProgress>>({})
-  const [emuProgress, setEmuProgress] = useState<Record<string, EmulatorInstallProgress>>({})
+  const emuProgress = useEmuProgress()
   const [paused, setPaused] = useState<Set<number>>(new Set())
   const knownIds = useRef(new Set<number>())
 
@@ -87,19 +88,7 @@ export default function Downloads() {
       )
     })
 
-    const offEmuProgress = window.retrio.onEmulatorInstallProgress((data) => {
-      setEmuProgress((prev) => {
-        const next = { ...prev, [data.emulatorId]: data }
-        if (data.total > 0 && data.received >= data.total) {
-          setTimeout(() => {
-            setEmuProgress((p) => { const n = { ...p }; delete n[data.emulatorId]; return n })
-          }, 1500)
-        }
-        return next
-      })
-    })
-
-    return () => { offProgress(); offDone(); offError(); offEmuProgress() }
+    return () => { offProgress(); offDone(); offError() }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handlePause(gameId: number) {

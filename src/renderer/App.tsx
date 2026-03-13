@@ -13,6 +13,7 @@ import Search from './pages/Search'
 import Library from './pages/Library'
 import Downloads from './pages/Downloads'
 import Settings from './pages/Settings'
+import { EmuProgressContext, type EmuProgressMap } from './contexts/EmuProgressContext'
 import './styles/app.css'
 
 const IS_ELECTRON = Boolean(window.retrio)
@@ -23,6 +24,7 @@ export default function App() {
   const { t } = useTranslation()
   const [phase, setPhase] = useState<Phase>('splash')
   const [isFirstRun, setIsFirstRun] = useState(false)
+  const [emuProgress, setEmuProgress] = useState<EmuProgressMap>({})
 
   useEffect(() => {
     if (!IS_ELECTRON) { setPhase('ready'); return }
@@ -54,9 +56,16 @@ export default function App() {
       toast(t('app.download_error', { message: data.message }), 'error')
     })
     const offEmuProgress = window.retrio.onEmulatorInstallProgress((data) => {
-      if (data.total > 0 && data.received >= data.total) {
-        toast(t('settings.installed_emulator', { name: data.emulatorId }), 'success')
-      }
+      setEmuProgress((prev) => {
+        const next = { ...prev, [data.emulatorId]: data }
+        if (data.total > 0 && data.received >= data.total) {
+          toast(t('settings.installed_emulator', { name: data.emulatorId }), 'success')
+          setTimeout(() => {
+            setEmuProgress((p) => { const n = { ...p }; delete n[data.emulatorId]; return n })
+          }, 1500)
+        }
+        return next
+      })
     })
     return () => { offDone(); offError(); offEmuProgress() }
   }, [t, phase])
@@ -74,6 +83,7 @@ export default function App() {
   }
 
   return (
+    <EmuProgressContext.Provider value={emuProgress}>
     <HashRouter>
       <div className="app-layout">
         <UpdateBanner />
@@ -95,5 +105,6 @@ export default function App() {
       <ConfirmDialog />
       <RomPickerModal />
     </HashRouter>
+    </EmuProgressContext.Provider>
   )
 }
