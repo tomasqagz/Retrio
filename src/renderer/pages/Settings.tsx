@@ -42,6 +42,7 @@ const [langOpen, setLangOpen] = useState(false)
   const [igdbClientId, setIgdbClientId] = useState('')
   const [igdbClientSecret, setIgdbClientSecret] = useState('')
   const [igdbHasCredentials, setIgdbHasCredentials] = useState(false)
+  const [igdbCredentialsError, setIgdbCredentialsError] = useState(false)
   const [igdbSaving, setIgdbSaving] = useState(false)
   const [igdbExpanded, setIgdbExpanded] = useState(false)
   const [showSecret, setShowSecret] = useState(false)
@@ -160,9 +161,24 @@ const [langOpen, setLangOpen] = useState(false)
     setIgdbSaving(true)
     try {
       await window.retrio.setIgdbCredentials(igdbClientId, igdbClientSecret)
-      setIgdbHasCredentials(Boolean(igdbClientId.trim()))
-      setIgdbExpanded(false)
-      toast(t('settings.igdb_saved'), 'success')
+      const hasId = Boolean(igdbClientId.trim())
+      setIgdbHasCredentials(hasId)
+      if (hasId) {
+        try {
+          await window.retrio.searchGames('test', undefined, undefined, 0)
+          setIgdbCredentialsError(false)
+          setIgdbExpanded(false)
+          toast(t('settings.igdb_saved'), 'success')
+        } catch {
+          setIgdbCredentialsError(true)
+          setIgdbExpanded(false)
+          toast(t('settings.igdb_credentials_invalid'), 'error')
+        }
+      } else {
+        setIgdbCredentialsError(false)
+        setIgdbExpanded(false)
+        toast(t('settings.igdb_saved'), 'success')
+      }
     } catch {
       toast(t('settings.igdb_error'), 'error')
     } finally {
@@ -253,13 +269,13 @@ const handleLanguageChange = useCallback((code: string) => {
     <div className="page settings-page">
       <h1 className="settings-title">{t('settings.title')}</h1>
 
-      <div className={`igdb-card ${igdbHasCredentials ? 'igdb-card--ok' : 'igdb-card--missing'}`}>
+      <div className={`igdb-card ${igdbCredentialsError ? 'igdb-card--error' : igdbHasCredentials ? 'igdb-card--ok' : 'igdb-card--missing'}`}>
         <button className="igdb-card-header" onClick={() => setIgdbExpanded((o) => !o)}>
           <div className="igdb-card-header-left">
-            {igdbHasCredentials ? <CheckSmallIcon /> : <WarnIcon />}
+            {igdbCredentialsError ? <WarnIcon /> : igdbHasCredentials ? <CheckSmallIcon /> : <WarnIcon />}
             <span className="igdb-card-title">{t('settings.igdb_title')}</span>
             <span className="igdb-card-badge">
-              {igdbHasCredentials ? t('settings.igdb_status_ok') : t('settings.igdb_status_missing')}
+              {igdbCredentialsError ? t('settings.igdb_status_invalid') : igdbHasCredentials ? t('settings.igdb_status_ok') : t('settings.igdb_status_missing')}
             </span>
           </div>
           <ChevronIcon open={igdbExpanded} />
@@ -363,7 +379,7 @@ const handleLanguageChange = useCallback((code: string) => {
               {updateStatus === 'error' && t('settings.updates_error')}
             </span>
             <span className="update-card__subtitle">
-              {updateStatus === 'idle' && t('settings.updates_idle')}
+              {updateStatus === 'idle' && !lastChecked && t('settings.updates_idle')}
               {updateStatus === 'available' && t('settings.updates_available_sub', { version: updateVersion })}
               {updateStatus === 'downloaded' && t('settings.updates_downloaded_sub', { version: updateVersion })}
               {updateStatus === 'error' && updateError && <span style={{ fontSize: '11px', opacity: 0.7 }}>{updateError}</span>}

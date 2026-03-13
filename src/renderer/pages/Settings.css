@@ -542,6 +542,7 @@
 
 .igdb-card--missing .igdb-card-header-left > svg { color: #ca8a04; }
 .igdb-card--ok .igdb-card-header-left > svg { color: var(--green); }
+.igdb-card--error .igdb-card-header-left > svg { color: #ef4444; }
 
 .igdb-card-title {
   font-size: 13px;
@@ -564,6 +565,16 @@
 .igdb-card--ok .igdb-card-badge {
   background: rgba(34, 197, 94, 0.15);
   color: var(--green);
+}
+
+.igdb-card--error {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.04);
+}
+
+.igdb-card--error .igdb-card-badge {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
 }
 
 .igdb-card-body {
