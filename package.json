@@ -17,6 +17,9 @@
   "build": {
     "appId": "com.tomasqagz.retrio",
     "productName": "Retrio",
+    "directories": {
+      "output": "dist/app"
+    },
     "publish": {
       "provider": "github",
       "owner": "tomasqagz",
