@@ -5,6 +5,7 @@ import { app } from 'electron'
 interface AppConfig {
   igdbClientId?: string
   igdbClientSecret?: string
+  customEmulatorPaths?: Record<string, string>
 }
 
 function getConfigPath(): string {

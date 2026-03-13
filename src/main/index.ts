@@ -267,6 +267,33 @@ ipcMain.handle('config:set-igdb', (_e, { clientId, clientSecret }: { clientId: s
   invalidateTokenCache()
 })
 
+ipcMain.handle('config:get-custom-emulators', () => {
+  return readConfig().customEmulatorPaths ?? {}
+})
+
+ipcMain.handle('config:set-custom-emulator', (_e, { platform, exePath }: { platform: string; exePath: string }) => {
+  const current = readConfig().customEmulatorPaths ?? {}
+  writeConfig({ customEmulatorPaths: { ...current, [platform]: exePath } })
+})
+
+ipcMain.handle('config:remove-custom-emulator', (_e, { platform }: { platform: string }) => {
+  const current = readConfig().customEmulatorPaths ?? {}
+  const updated = { ...current }
+  delete updated[platform]
+  writeConfig({ customEmulatorPaths: updated })
+})
+
+ipcMain.handle('dialog:open-exe', async () => {
+  const win = BrowserWindow.getAllWindows()[0]
+  if (!win) return null
+  const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+    title: 'Seleccionar emulador',
+    filters: [{ name: 'Ejecutable', extensions: ['exe'] }],
+    properties: ['openFile'],
+  })
+  return canceled ? null : filePaths[0]
+})
+
 // ── App lifecycle ─────────────────────────────────────────────────────────────
 
 app.whenReady().then(() => {

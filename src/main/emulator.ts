@@ -7,6 +7,7 @@ const exec = promisify(execCb)
 import https from 'https'
 import { app } from 'electron'
 import type { Emulator, Platform } from '../shared/types'
+import { readConfig } from './config'
 
 // ── Directorio local de emuladores ───────────────────────────────────────────
 
@@ -370,19 +371,35 @@ export async function openEmulator(id: string): Promise<void> {
 }
 
 export async function launchGame(romPath: string, platform: Platform, onExit?: (seconds: number) => void): Promise<void> {
-  const cfg = EMULATOR_CONFIGS.find((c) => c.platforms.includes(platform))
-  if (!cfg) throw new Error(`No hay emulador configurado para: ${platform}`)
+  const config = readConfig()
+  const customExePath = config.customEmulatorPaths?.[platform]
 
-  const exePath = await findExe(cfg.exeName, cfg.id)
-  if (!exePath) throw new Error(`${cfg.name} no está instalado`)
+  let exePath: string
+  let args: string[]
 
-  const stat = fs.statSync(exePath)
-  if (!stat.isFile()) {
-    return Promise.reject(new Error(`La ruta resuelta es un directorio, no un ejecutable: ${exePath}`))
+  if (customExePath) {
+    if (!fs.existsSync(customExePath)) throw new Error(`Emulador personalizado no encontrado: ${customExePath}`)
+    const stat = fs.statSync(customExePath)
+    if (!stat.isFile()) throw new Error(`La ruta del emulador personalizado no es un ejecutable: ${customExePath}`)
+    exePath = customExePath
+    args = [romPath]
+  } else {
+    const cfg = EMULATOR_CONFIGS.find((c) => c.platforms.includes(platform))
+    if (!cfg) throw new Error(`No hay emulador configurado para: ${platform}`)
+
+    const found = await findExe(cfg.exeName, cfg.id)
+    if (!found) throw new Error(`${cfg.name} no está instalado`)
+
+    const stat = fs.statSync(found)
+    if (!stat.isFile()) {
+      return Promise.reject(new Error(`La ruta resuelta es un directorio, no un ejecutable: ${found}`))
+    }
+
+    exePath = found
+    args = cfg.buildArgs(romPath, platform, path.dirname(found))
   }
 
   const exeDir = path.dirname(exePath)
-  const args = cfg.buildArgs(romPath, platform, exeDir)
 
   console.log('[launchGame] exePath:', exePath)
   console.log('[launchGame] args:', args)

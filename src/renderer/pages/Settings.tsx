@@ -48,6 +48,7 @@ const [langOpen, setLangOpen] = useState(false)
   const [showSecret, setShowSecret] = useState(false)
   const [cacheInfo, setCacheInfo] = useState<{ count: number; sizeBytes: number } | null>(null)
   const [cacheClearing, setCacheClearing] = useState(false)
+  const [customEmuPaths, setCustomEmuPaths] = useState<Record<string, string>>({})
   const [updateStatus, setUpdateStatus] = useState<
     'idle' | 'checking' | 'up-to-date' | 'available' | 'downloading' | 'downloaded' | 'error'
   >('idle')
@@ -78,6 +79,7 @@ const [langOpen, setLangOpen] = useState(false)
       setIgdbClientSecret(clientSecret)
     })
     void window.retrio.getSearchCacheInfo().then(setCacheInfo)
+    void window.retrio.getCustomEmulatorPaths().then(setCustomEmuPaths)
   }, [])
 
   useEffect(() => {
@@ -184,6 +186,20 @@ const [langOpen, setLangOpen] = useState(false)
     } finally {
       setIgdbSaving(false)
     }
+  }
+
+  async function handleSetCustomEmulator(platform: string) {
+    if (!IS_ELECTRON) return
+    const exePath = await window.retrio.openExeDialog()
+    if (!exePath) return
+    await window.retrio.setCustomEmulatorPath(platform, exePath)
+    setCustomEmuPaths((prev) => ({ ...prev, [platform]: exePath }))
+  }
+
+  async function handleRemoveCustomEmulator(platform: string) {
+    if (!IS_ELECTRON) return
+    await window.retrio.removeCustomEmulatorPath(platform)
+    setCustomEmuPaths((prev) => { const n = { ...prev }; delete n[platform]; return n })
   }
 
   async function handleClearCache() {
@@ -523,6 +539,39 @@ const handleLanguageChange = useCallback((code: string) => {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="settings-section">
+        <h2 className="settings-section-title">{t('settings.custom_emulators_title')}</h2>
+        <p className="settings-section-desc">{t('settings.custom_emulators_desc')}</p>
+        <div className="custom-emu-list">
+          {(['NES', 'SNES', 'Sega Genesis', 'Sega Saturn', 'N64', 'PS1', 'PS2'] as const).map((platform) => {
+            const custom = customEmuPaths[platform]
+            return (
+              <div key={platform} className="custom-emu-row">
+                <span className="custom-emu-platform">{platform}</span>
+                {custom ? (
+                  <div className="custom-emu-right">
+                    <span className="custom-emu-path" title={custom}>{custom.split(/[\\/]/).pop()}</span>
+                    <button className="btn-emu-change" onClick={() => void handleSetCustomEmulator(platform)}>
+                      {t('settings.custom_emulators_change')}
+                    </button>
+                    <button className="btn-emu-remove" onClick={() => void handleRemoveCustomEmulator(platform)} title={t('settings.custom_emulators_remove')}>
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <div className="custom-emu-right">
+                    <span className="custom-emu-default">{t('settings.custom_emulators_default')}</span>
+                    <button className="btn-emu-change" onClick={() => void handleSetCustomEmulator(platform)}>
+                      {t('settings.custom_emulators_set')}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </section>
 
