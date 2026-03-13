@@ -7,7 +7,7 @@
     "dev": "vite --config vite.config.ts",
     "electron": "tsc -p tsconfig.preload.json && tsc -p tsconfig.node.json && concurrently --kill-others --success first \"vite --config vite.config.ts\" \"wait-on http://localhost:5173 && node scripts/launch-electron.cjs\"",
     "dev:electron": "npm run electron",
-    "build": "tsc -p tsconfig.node.json && vite build --config vite.config.ts",
+    "build": "tsc -p tsconfig.preload.json && tsc -p tsconfig.node.json && vite build --config vite.config.ts",
     "dist": "npm run build && electron-builder",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.node.json --noEmit"
   },
