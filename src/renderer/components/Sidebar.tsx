@@ -42,9 +42,6 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="sidebar-footer">
-        <div className="sidebar-version">v1.0.0</div>
-      </div>
     </aside>
   )
 }

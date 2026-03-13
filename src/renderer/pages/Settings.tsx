@@ -563,7 +563,7 @@ const handleLanguageChange = useCallback((code: string) => {
         <div className="about-grid">
           <div className="about-row">
             <span className="about-label">{t('settings.about_version')}</span>
-            <span className="about-value">0.1.2</span>
+            <span className="about-value">0.1.3</span>
           </div>
           <div className="about-row">
             <span className="about-label">{t('settings.about_engine')}</span>

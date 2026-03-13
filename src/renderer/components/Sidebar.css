@@ -75,13 +75,3 @@
 .sidebar-item-label {
   font-size: 14px;
 }
-
-.sidebar-footer {
-  padding: 8px;
-}
-
-.sidebar-version {
-  font-size: 11px;
-  color: var(--text-muted);
-  text-align: center;
-}
