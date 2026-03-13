@@ -79,6 +79,16 @@
   color: #fff !important;
 }
 
+.update-safe-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
 .btn-install--accent:hover {
   background: var(--accent-hover) !important;
   border-color: var(--accent-hover) !important;

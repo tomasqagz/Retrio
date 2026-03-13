@@ -138,6 +138,7 @@
     "updates_check": "Buscar actualizaciones",
     "updates_download": "Descargar",
     "updates_install": "Reiniciar e instalar",
+    "updates_data_safe": "Al actualizar no se borran tus datos, biblioteca ni configuración.",
     "about_title": "Acerca de",
     "about_version": "Versión",
     "about_engine": "Motor",

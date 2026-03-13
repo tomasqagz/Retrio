@@ -403,6 +403,10 @@ const handleLanguageChange = useCallback((code: string) => {
             )}
           </div>
         </div>
+        <p className="update-safe-note">
+          <InfoIcon />
+          {t('settings.updates_data_safe')}
+        </p>
       </section>
 
       <section className="settings-section">
@@ -610,6 +614,16 @@ const handleLanguageChange = useCallback((code: string) => {
         </div>
       </section>
     </div>
+  )
+}
+
+function InfoIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="14" height="14" style={{ flexShrink: 0, marginTop: 1 }}>
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="8" strokeWidth="2.5" />
+      <line x1="12" y1="12" x2="12" y2="16" />
+    </svg>
   )
 }
 

@@ -138,6 +138,7 @@
     "updates_check": "Check for updates",
     "updates_download": "Download",
     "updates_install": "Restart & install",
+    "updates_data_safe": "Updating will not delete your data, library or settings.",
     "about_title": "About",
     "about_version": "Version",
     "about_engine": "Engine",
