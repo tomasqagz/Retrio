@@ -240,14 +240,7 @@ const [langOpen, setLangOpen] = useState(false)
   }
 
   function formatLastChecked(date: Date): string {
-    const now = new Date()
-    const diff = now.getTime() - date.getTime()
-    const mins = Math.floor(diff / 60000)
-    if (mins < 1) return t('settings.updates_just_now')
-    if (mins < 60) return t('settings.updates_minutes_ago', { n: mins })
-    const hours = Math.floor(mins / 60)
-    if (hours < 24) return t('settings.updates_hours_ago', { n: hours })
-    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    return date.toLocaleString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
   }
 
   const handleWindowSizeChange = useCallback((w: number, h: number) => {

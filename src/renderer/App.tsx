@@ -64,7 +64,6 @@ export default function App() {
       setEmuProgress((prev) => {
         const next = { ...prev, [data.emulatorId]: data }
         if (data.total > 0 && data.received >= data.total) {
-          toast(t('settings.installed_emulator', { name: data.emulatorId }), 'success')
           setTimeout(() => {
             setEmuProgress((p) => { const n = { ...p }; delete n[data.emulatorId]; return n })
             setCompletedEmus((p) => ({ ...p, [data.emulatorId]: data }))
