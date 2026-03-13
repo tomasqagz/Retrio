@@ -1,6 +1,6 @@
 {
   "name": "retrio",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Launcher de juegos retro estilo Stremio",
   "main": "electron-main.cjs",
   "scripts": {
@@ -17,6 +17,7 @@
   "dependencies": {
     "better-sqlite3": "^12.6.2",
     "dotenv": "^17.3.1",
+    "electron-updater": "^6.8.3",
     "flag-icons": "^7.5.0",
     "i18next": "^25.8.17",
     "react": "^19.2.4",

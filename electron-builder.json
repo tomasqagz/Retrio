@@ -6,12 +6,25 @@
     "output": "dist/app"
   },
   "files": [
-    "src/main/**/*",
+    "electron-main.cjs",
+    "dist/main/**/*",
+    "dist/preload/**/*",
     "dist/renderer/**/*"
   ],
+  "publish": {
+    "provider": "github",
+    "owner": "tomasqagz",
+    "repo": "Retrio"
+  },
   "win": {
     "target": "nsis",
     "icon": "public/icon.ico"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "installerIcon": "public/icon.ico",
+    "uninstallerIcon": "public/icon.ico"
   },
   "mac": {
     "target": "dmg",

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { Emulator } from '../../shared/types'
+import type { Emulator, UpdaterEvent } from '../../shared/types'
 import { toast } from '../components/Toaster'
 import { confirm } from '../components/ConfirmDialog'
 import i18n, { LANGUAGES } from '../i18n'
@@ -46,6 +46,12 @@ const [langOpen, setLangOpen] = useState(false)
   const [igdbExpanded, setIgdbExpanded] = useState(false)
   const [cacheInfo, setCacheInfo] = useState<{ count: number; sizeBytes: number } | null>(null)
   const [cacheClearing, setCacheClearing] = useState(false)
+  const [updateStatus, setUpdateStatus] = useState<
+    'idle' | 'checking' | 'up-to-date' | 'available' | 'downloading' | 'downloaded' | 'error'
+  >('idle')
+  const [updateVersion, setUpdateVersion] = useState('')
+  const [updatePercent, setUpdatePercent] = useState(0)
+  const [lastChecked, setLastChecked] = useState<Date | null>(null)
 
   useEffect(() => {
     if (!IS_ELECTRON) return
@@ -175,7 +181,55 @@ const [langOpen, setLangOpen] = useState(false)
     }
   }
 
-const handleWindowSizeChange = useCallback((w: number, h: number) => {
+  useEffect(() => {
+    if (!IS_ELECTRON || !window.retrio?.onUpdaterEvent) return
+    const off = window.retrio.onUpdaterEvent((event: UpdaterEvent) => {
+      switch (event.type) {
+        case 'checking':
+          setUpdateStatus('checking')
+          break
+        case 'available':
+          setUpdateStatus('available')
+          setUpdateVersion(event.version ?? '')
+          break
+        case 'not-available':
+          setUpdateStatus('up-to-date')
+          setLastChecked(new Date())
+          break
+        case 'download-progress':
+          setUpdateStatus('downloading')
+          setUpdatePercent(event.percent ?? 0)
+          break
+        case 'downloaded':
+          setUpdateStatus('downloaded')
+          setUpdateVersion(event.version ?? '')
+          break
+        case 'error':
+          setUpdateStatus('error')
+          break
+      }
+    })
+    return off
+  }, [])
+
+  function handleCheckUpdates() {
+    if (!IS_ELECTRON) return
+    setUpdateStatus('checking')
+    void window.retrio.checkForUpdates()
+  }
+
+  function formatLastChecked(date: Date): string {
+    const now = new Date()
+    const diff = now.getTime() - date.getTime()
+    const mins = Math.floor(diff / 60000)
+    if (mins < 1) return t('settings.updates_just_now')
+    if (mins < 60) return t('settings.updates_minutes_ago', { n: mins })
+    const hours = Math.floor(mins / 60)
+    if (hours < 24) return t('settings.updates_hours_ago', { n: hours })
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  }
+
+  const handleWindowSizeChange = useCallback((w: number, h: number) => {
     const key = `${w}x${h}`
     localStorage.setItem('retrio-window-size', key)
     setWindowSize(key)
@@ -271,6 +325,62 @@ const handleLanguageChange = useCallback((code: string) => {
           </div>
         )}
       </div>
+
+      <section className="settings-section">
+        <h2 className="settings-section-title">{t('settings.updates_title')}</h2>
+        <div className="update-card">
+          <div className={`update-card__icon update-card__icon--${updateStatus === 'available' || updateStatus === 'downloaded' ? 'available' : updateStatus === 'error' ? 'error' : 'ok'}`}>
+            {updateStatus === 'checking' || updateStatus === 'downloading'
+              ? <UpdateSpinnerIcon />
+              : updateStatus === 'error'
+              ? <UpdateErrorIcon />
+              : updateStatus === 'available' || updateStatus === 'downloaded'
+              ? <UpdateArrowIcon />
+              : <UpdateCheckIcon />
+            }
+          </div>
+          <div className="update-card__body">
+            <span className="update-card__title">
+              {updateStatus === 'idle' && t('settings.updates_idle_title')}
+              {updateStatus === 'checking' && t('settings.updates_checking')}
+              {updateStatus === 'up-to-date' && t('settings.updates_up_to_date')}
+              {updateStatus === 'available' && t('settings.updates_available')}
+              {updateStatus === 'downloading' && t('settings.updates_downloading', { percent: updatePercent })}
+              {updateStatus === 'downloaded' && t('settings.updates_downloaded')}
+              {updateStatus === 'error' && t('settings.updates_error')}
+            </span>
+            <span className="update-card__subtitle">
+              {updateStatus === 'idle' && t('settings.updates_idle')}
+              {updateStatus === 'available' && t('settings.updates_available_sub', { version: updateVersion })}
+              {updateStatus === 'downloaded' && t('settings.updates_downloaded_sub', { version: updateVersion })}
+              {lastChecked && (updateStatus === 'up-to-date' || updateStatus === 'error') &&
+                t('settings.updates_last_checked', { time: formatLastChecked(lastChecked) })}
+            </span>
+            {updateStatus === 'downloading' && (
+              <div className="update-card__progress">
+                <div className="update-card__progress-fill" style={{ width: `${updatePercent}%` }} />
+              </div>
+            )}
+          </div>
+          <div className="update-card__action">
+            {(updateStatus === 'idle' || updateStatus === 'up-to-date' || updateStatus === 'error') && (
+              <button className="btn-install" onClick={handleCheckUpdates}>
+                {t('settings.updates_check')}
+              </button>
+            )}
+            {updateStatus === 'available' && (
+              <button className="btn-install" onClick={() => void window.retrio.downloadUpdate()}>
+                {t('settings.updates_download')}
+              </button>
+            )}
+            {updateStatus === 'downloaded' && (
+              <button className="btn-install btn-install--accent" onClick={() => void window.retrio.installUpdate()}>
+                {t('settings.updates_install')}
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
 
       <section className="settings-section">
         <h2 className="settings-section-title">{t('settings.language_title')}</h2>
@@ -453,7 +563,7 @@ const handleLanguageChange = useCallback((code: string) => {
         <div className="about-grid">
           <div className="about-row">
             <span className="about-label">{t('settings.about_version')}</span>
-            <span className="about-value">1.0.0</span>
+            <span className="about-value">0.1.0</span>
           </div>
           <div className="about-row">
             <span className="about-label">{t('settings.about_engine')}</span>
@@ -512,6 +622,41 @@ function WarnIcon() {
       <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
       <line x1="12" y1="9" x2="12" y2="13" />
       <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  )
+}
+
+function UpdateCheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  )
+}
+
+function UpdateArrowIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
+      <polyline points="1 4 1 10 7 10" />
+      <polyline points="23 20 23 14 17 14" />
+      <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
+    </svg>
+  )
+}
+
+function UpdateErrorIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  )
+}
+
+function UpdateSpinnerIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" width="22" height="22" className="update-spinner">
+      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
     </svg>
   )
 }

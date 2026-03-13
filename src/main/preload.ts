@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { RetrioAPI, DownloadProgress, EmulatorInstallProgress, Game, RomOption } from '../shared/types'
+import type { RetrioAPI, DownloadProgress, EmulatorInstallProgress, UpdaterEvent, Game, RomOption } from '../shared/types'
 
 const api: RetrioAPI = {
   // IGDB
@@ -68,6 +68,16 @@ const api: RetrioAPI = {
   // Cache de búsqueda
   clearSearchCache: () => ipcRenderer.invoke('cache:clear'),
   getSearchCacheInfo: () => ipcRenderer.invoke('cache:info'),
+
+  // Updater
+  checkForUpdates: () => ipcRenderer.invoke('updater:check'),
+  downloadUpdate: () => ipcRenderer.invoke('updater:download'),
+  installUpdate: () => ipcRenderer.invoke('updater:install'),
+  onUpdaterEvent: (callback: (event: UpdaterEvent) => void) => {
+    const handler = (_e: unknown, event: UpdaterEvent) => callback(event)
+    ipcRenderer.on('updater:event', handler)
+    return () => ipcRenderer.removeListener('updater:event', handler)
+  },
 
   // Biblioteca SQLite
   getLibrary: () => ipcRenderer.invoke('library:get'),

@@ -7,6 +7,7 @@ import ConfirmDialog from './components/ConfirmDialog'
 import RomPickerModal from './components/RomPickerModal'
 import SplashScreen from './components/SplashScreen'
 import Onboarding from './components/Onboarding'
+import UpdateBanner from './components/UpdateBanner'
 import Home from './pages/Home'
 import Search from './pages/Search'
 import Library from './pages/Library'
@@ -70,17 +71,20 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className="app-layout">
-        <Sidebar />
-        <main className="app-content">
-          <Routes>
-            <Route path="/" element={<Navigate to="/home" replace />} />
-            <Route path="/home" element={<Home />} />
-            <Route path="/search" element={<Search />} />
-            <Route path="/library" element={<Library />} />
-            <Route path="/downloads" element={<Downloads />} />
-            <Route path="/settings" element={<Settings />} />
-          </Routes>
-        </main>
+        <UpdateBanner />
+        <div className="app-main">
+          <Sidebar />
+          <main className="app-content">
+            <Routes>
+              <Route path="/" element={<Navigate to="/home" replace />} />
+              <Route path="/home" element={<Home />} />
+              <Route path="/search" element={<Search />} />
+              <Route path="/library" element={<Library />} />
+              <Route path="/downloads" element={<Downloads />} />
+              <Route path="/settings" element={<Settings />} />
+            </Routes>
+          </main>
+        </div>
       </div>
       <Toaster />
       <ConfirmDialog />

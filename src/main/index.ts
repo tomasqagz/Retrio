@@ -21,6 +21,7 @@ import { startArchiveDownload, pauseArchiveDownload, resumeArchiveDownload, canc
 import { destroyClient } from './torrent'
 import { getEmulatorStatus, installEmulator, launchGame, deleteEmulator, openEmulator } from './emulator'
 import { cacheGameImages, localizeGameUrls, clearImageCache, gameImageDir } from './imageCache'
+import { initUpdater } from './updater'
 import type { Game, Platform, RomOption } from '../shared/types'
 
 // Registrar esquema custom ANTES de app.whenReady()
@@ -282,6 +283,7 @@ app.whenReady().then(() => {
   })
 
   createWindow()
+  if (!isDev) initUpdater()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })

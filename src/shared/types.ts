@@ -129,6 +129,24 @@ export interface RetrioAPI {
   markNoRom: (id: number, value: boolean) => Promise<void>
   getRomInfo: (id: number) => Promise<{ fileSize: number; fileName: string } | null>
   toggleFavorite: (id: number) => Promise<void>
+
+  // Updater
+  checkForUpdates: () => Promise<void>
+  downloadUpdate: () => Promise<void>
+  installUpdate: () => Promise<void>
+  onUpdaterEvent: (callback: (event: UpdaterEvent) => void) => () => void
+}
+
+// ── Updater ───────────────────────────────────────────────────────────────────
+
+export interface UpdaterEvent {
+  type: 'checking' | 'available' | 'not-available' | 'download-progress' | 'downloaded' | 'error'
+  version?: string
+  percent?: number
+  bytesPerSecond?: number
+  transferred?: number
+  total?: number
+  message?: string
 }
 
 // ── Extensión global de Window para el renderer ───────────────────────────────

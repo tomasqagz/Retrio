@@ -1,8 +1,88 @@
 .app-layout {
   display: flex;
+  flex-direction: column;
   height: 100vh;
   overflow: hidden;
   background: var(--bg-primary);
+}
+
+.app-main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Update Banner ─────────────────────────────────────────────────────────── */
+
+.update-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: var(--accent-dim);
+  border-bottom: 1px solid var(--accent);
+  font-size: 13px;
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.update-banner__text {
+  flex: 1;
+  color: var(--text-primary);
+}
+
+.update-banner__btn {
+  padding: 4px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.update-banner__btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.update-banner__btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.update-banner__btn--primary:hover {
+  background: var(--accent-hover);
+}
+
+.update-banner__dismiss {
+  padding: 2px 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s;
+}
+
+.update-banner__dismiss:hover {
+  color: var(--text-primary);
+}
+
+.update-banner__progress-bar {
+  width: 140px;
+  height: 4px;
+  background: var(--bg-hover);
+  border-radius: 2px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.update-banner__progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.3s ease;
 }
 
 .app-content {
