@@ -51,6 +51,7 @@ const [langOpen, setLangOpen] = useState(false)
   >('idle')
   const [updateVersion, setUpdateVersion] = useState('')
   const [updatePercent, setUpdatePercent] = useState(0)
+  const [updateError, setUpdateError] = useState('')
   const [lastChecked, setLastChecked] = useState<Date | null>(() => {
     const saved = localStorage.getItem('retrio-last-update-check')
     return saved ? new Date(saved) : null
@@ -207,6 +208,7 @@ const [langOpen, setLangOpen] = useState(false)
           break
         case 'error':
           setUpdateStatus('error')
+          setUpdateError(event.message ?? '')
           break
       }
     })
@@ -354,6 +356,7 @@ const handleLanguageChange = useCallback((code: string) => {
               {updateStatus === 'idle' && t('settings.updates_idle')}
               {updateStatus === 'available' && t('settings.updates_available_sub', { version: updateVersion })}
               {updateStatus === 'downloaded' && t('settings.updates_downloaded_sub', { version: updateVersion })}
+              {updateStatus === 'error' && updateError && <span style={{ fontSize: '11px', opacity: 0.7 }}>{updateError}</span>}
               {lastChecked && (updateStatus === 'up-to-date' || updateStatus === 'error') &&
                 t('settings.updates_last_checked', { time: formatLastChecked(lastChecked) })}
             </span>

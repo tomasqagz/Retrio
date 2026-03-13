@@ -21,7 +21,8 @@
       "output": "dist/app"
     },
     "win": {
-      "icon": "public/icon.ico"
+      "icon": "public/icon.ico",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,
