@@ -304,7 +304,8 @@ export default function Settings() {
               {updateStatus === 'available' && t('settings.updates_available_sub', { version: updateVersion })}
               {updateStatus === 'downloaded' && t('settings.updates_downloaded_sub', { version: updateVersion })}
               {updateStatus === 'error' && updateError && <span style={{ fontSize: '11px', opacity: 0.7 }}>{updateError}</span>}
-              {lastChecked && updateStatus !== 'checking' && updateStatus !== 'downloading' &&
+              {lastChecked && updateStatus !== 'checking' && updateStatus !== 'downloading'
+                && updateStatus !== 'available' && updateStatus !== 'downloaded' &&
                 t('settings.updates_last_checked', { time: formatLastChecked(lastChecked) })}
             </span>
             {updateStatus === 'downloading' && (
@@ -417,7 +418,7 @@ export default function Settings() {
         <div className="about-grid">
           <div className="about-row">
             <span className="about-label">{t('settings.about_version')}</span>
-            <span className="about-value">0.1.10</span>
+            <span className="about-value">0.1.11</span>
           </div>
           <div className="about-row">
             <span className="about-label">{t('settings.about_engine')}</span>

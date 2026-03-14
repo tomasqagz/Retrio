@@ -44,15 +44,15 @@ export function localizeGameUrls(game: Game): Game {
   const result = { ...game }
 
   if (game.coverUrl && fs.existsSync(path.join(dir, 'cover.jpg'))) {
-    result.coverUrl = `retrio-img://${game.id}/cover.jpg`
+    result.coverUrl = `retrio-img://img/${game.id}/cover.jpg`
   }
   if (game.coverUrlHd && fs.existsSync(path.join(dir, 'cover_hd.jpg'))) {
-    result.coverUrlHd = `retrio-img://${game.id}/cover_hd.jpg`
+    result.coverUrlHd = `retrio-img://img/${game.id}/cover_hd.jpg`
   }
   if (game.screenshots) {
     result.screenshots = game.screenshots.map((url, i) =>
       fs.existsSync(path.join(dir, `screenshot_${i}.jpg`))
-        ? `retrio-img://${game.id}/screenshot_${i}.jpg`
+        ? `retrio-img://img/${game.id}/screenshot_${i}.jpg`
         : url
     )
   }
