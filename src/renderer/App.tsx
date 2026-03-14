@@ -7,7 +7,6 @@ import ConfirmDialog from './components/ConfirmDialog'
 import RomPickerModal from './components/RomPickerModal'
 import SplashScreen from './components/SplashScreen'
 import Onboarding from './components/Onboarding'
-import UpdateBanner from './components/UpdateBanner'
 import Home from './pages/Home'
 import Search from './pages/Search'
 import Library from './pages/Library'
@@ -92,8 +91,7 @@ export default function App() {
     <EmuProgressContext.Provider value={{ active: emuProgress, completed: completedEmus, dismissCompleted }}>
     <HashRouter>
       <div className="app-layout">
-        <UpdateBanner />
-        <div className="app-main">
+<div className="app-main">
           <Sidebar />
           <main className="app-content">
             <Routes>

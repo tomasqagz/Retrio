@@ -1,8 +1,7 @@
 import 'dotenv/config'
-import { app, BrowserWindow, shell, ipcMain, dialog, protocol, net } from 'electron'
+import { app, BrowserWindow, shell, ipcMain, dialog, protocol } from 'electron'
 import path from 'path'
 import fs from 'fs'
-import { pathToFileURL } from 'url'
 import { searchGames, getPopularGames, getGameById, invalidateTokenCache } from './igdb'
 import { readConfig, writeConfig } from './config'
 import {
@@ -309,16 +308,24 @@ app.whenReady().then(() => {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
   }
 
-  // Servir imágenes cacheadas localmente vía retrio-img://{gameId}/{filename}
-  protocol.handle('retrio-img', (request) => {
+  // Servir imágenes cacheadas localmente vía retrio-img://img/{gameId}/{filename}
+  protocol.handle('retrio-img', async (request) => {
     const parsed = new URL(request.url)
+    const segments = parsed.pathname.replace(/^\/+/, '').split('/')
     const filePath = path.join(
       app.getPath('userData'),
       'image-cache',
-      parsed.hostname,
-      parsed.pathname,
+      ...segments,
     )
-    return net.fetch(pathToFileURL(filePath).toString())
+    try {
+      const data = await fs.promises.readFile(filePath)
+      const ext = path.extname(filePath).toLowerCase()
+      const mimeType = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : 'image/jpeg'
+      return new Response(data.buffer as ArrayBuffer, { headers: { 'Content-Type': mimeType } })
+    } catch (err) {
+      console.error('[retrio-img] failed to serve:', filePath, err)
+      return new Response(null, { status: 404 })
+    }
   })
 
   createWindow()
