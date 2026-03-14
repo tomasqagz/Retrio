@@ -2,6 +2,7 @@ import 'dotenv/config'
 import { app, BrowserWindow, shell, ipcMain, dialog, protocol, net } from 'electron'
 import path from 'path'
 import fs from 'fs'
+import { pathToFileURL } from 'url'
 import { searchGames, getPopularGames, getGameById, invalidateTokenCache } from './igdb'
 import { readConfig, writeConfig } from './config'
 import {
@@ -41,7 +42,9 @@ function createWindow(): void {
     backgroundColor: '#0f0f13',
     autoHideMenuBar: true,
     titleBarStyle: 'hiddenInset',
-    icon: path.join(process.cwd(), 'public/RetrioIcon.png'),
+    icon: isDev
+      ? path.join(process.cwd(), 'public/icon.ico')
+      : path.join(__dirname, '../../renderer/icon.ico'),
     webPreferences: {
       preload: isDev
         ? path.join(process.cwd(), 'dist/preload/main/preload.js')
@@ -297,6 +300,15 @@ ipcMain.handle('dialog:open-exe', async () => {
 // ── App lifecycle ─────────────────────────────────────────────────────────────
 
 app.whenReady().then(() => {
+  // Crear carpetas por defecto si no existen
+  for (const dir of [
+    path.join(app.getPath('userData'), 'roms'),
+    path.join(app.getPath('userData'), 'emulators'),
+    path.join(app.getPath('userData'), 'emulators', 'bios'),
+  ]) {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+  }
+
   // Servir imágenes cacheadas localmente vía retrio-img://{gameId}/{filename}
   protocol.handle('retrio-img', (request) => {
     const parsed = new URL(request.url)
@@ -306,7 +318,7 @@ app.whenReady().then(() => {
       parsed.hostname,
       parsed.pathname,
     )
-    return net.fetch(`file://${filePath.replace(/\\/g, '/')}`)
+    return net.fetch(pathToFileURL(filePath).toString())
   })
 
   createWindow()

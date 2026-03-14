@@ -115,11 +115,8 @@ export default function Library() {
     }
   }
 
-  const downloading = games.filter((g) => g.downloading)
-
   const filtered = games
     .filter((g) =>
-      !g.downloading &&
       (platform === 'Todas' || g.platform === platform) &&
       (!query || g.title.toLowerCase().includes(query.toLowerCase()))
     )
@@ -229,17 +226,6 @@ export default function Library() {
           )
         })}
       </div>
-
-      {downloading.length > 0 && (
-        <section className="library-section">
-          <h2 className="section-title">{t('library.downloading')}</h2>
-          <div className="games-grid">
-            {downloading.map((game) => (
-              <GameCard key={game.id} game={game} />
-            ))}
-          </div>
-        </section>
-      )}
 
       {sorted.length > 0 ? (
         <section className="library-section">
