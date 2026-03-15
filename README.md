@@ -7,11 +7,13 @@ A retro game launcher built with Electron and React, inspired by Stremio. Discov
 - **Game discovery** — Search the IGDB database with filters by platform, genre, and sorting options
 - **Library management** — Track your games, favorites, playtime, and download status
 - **Torrent downloads** — Download ROMs directly via WebTorrent with real-time progress
-- **Emulator management** — Install, launch, and remove emulators from within the app
-- **Auto-updates** — Automatically checks for new app releases via GitHub
+- **Emulator management** — Dedicated page to install, launch, browse, and remove emulators
+- **Custom emulator paths** — Override the default emulator per platform with a custom executable
+- **Auto-updates** — Automatically checks for new app releases via GitHub, with last-checked timestamp
 - **Local ROMs** — Add games from local files without IGDB
 - **Stats dashboard** — Games count, playtime, favorites, and storage breakdown by platform
-- **Internationalization** — Multi-language support via i18next
+- **Internationalization** — Multi-language support (English / Spanish), selectable during onboarding and in Settings
+- **First-run onboarding** — Language picker and IGDB credentials setup on first launch
 
 ## Supported Platforms
 
@@ -107,4 +109,8 @@ All user data (library, settings, image cache, ROMs, emulators) is stored in `%A
 
 ## License
 
-ISC
+[GPL-3.0-or-later](LICENSE)
+
+Copyright (C) 2025 tomasqagz
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
