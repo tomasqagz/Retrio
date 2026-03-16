@@ -50,7 +50,7 @@ function migrate(db: Database.Database): void {
   try { db.exec(`ALTER TABLE games ADD COLUMN last_played_at INTEGER`) } catch { /* already exists */ }
   try { db.exec(`ALTER TABLE games ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0`) } catch { /* already exists */ }
   // Reset any downloads that were in progress when the app was last closed
-  db.exec(`DELETE FROM games WHERE downloading = 1 AND downloaded = 0`)
+  db.exec(`UPDATE games SET downloading = 0, progress = 0 WHERE downloading = 1 AND downloaded = 0`)
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS search_cache (
@@ -182,6 +182,10 @@ export function markAsDownloaded(id: number, romPath: string): void {
   getDb()
     .prepare('UPDATE games SET downloaded = 1, downloading = 0, progress = 100, rom_path = ? WHERE id = ?')
     .run(romPath, id)
+}
+
+export function resetDownload(id: number): void {
+  getDb().prepare('UPDATE games SET downloading = 0, progress = 0 WHERE id = ?').run(id)
 }
 
 export function dismissDownload(id: number): void {

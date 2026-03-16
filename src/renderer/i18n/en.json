@@ -278,5 +278,17 @@
   "confirm": {
     "delete": "Remove",
     "cancel": "Cancel"
+  },
+  "quit": {
+    "title": "Quit Retrio?",
+    "subtitle": "There are active downloads. If you quit now, their progress will be lost and you'll need to restart them manually.",
+    "confirm": "Quit",
+    "cancel": "Cancel"
+  },
+  "close": {
+    "title": "Downloads in progress",
+    "subtitle": "If you minimize, downloads keep running in the system tray. If you quit, their progress will be lost and you'll need to restart them manually.",
+    "minimize": "Minimize to tray",
+    "quit": "Quit Retrio"
   }
 }

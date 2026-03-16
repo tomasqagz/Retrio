@@ -268,6 +268,7 @@ export default function Library() {
         <GameDetail
           game={selectedGame}
           onClose={handleDetailClose}
+          onRemoved={(id) => setGames((prev) => prev.filter((g) => g.id !== id))}
         />
       )}
 

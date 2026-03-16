@@ -20,6 +20,8 @@ const PLATFORM_COLORS: Record<Platform, string> = {
 interface GameDetailProps {
   game: Game
   onClose: () => void
+  onRemoved?: (gameId: number) => void
+  onLibraryChange?: (gameId: number, inLibrary: boolean) => void
 }
 
 const IS_ELECTRON = Boolean(window.retrio)
@@ -31,7 +33,7 @@ async function fetchDetail(id: number): Promise<Game | null> {
   return res.json() as Promise<Game>
 }
 
-export default function GameDetail({ game, onClose }: GameDetailProps) {
+export default function GameDetail({ game, onClose, onRemoved, onLibraryChange }: GameDetailProps) {
   const { t } = useTranslation()
   const [detail, setDetail] = useState<Game | null>(null)
   const [loading, setLoading] = useState(true)
@@ -131,7 +133,8 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
     await window.retrio.addToLibrary({ ...gameToSave, downloaded: false, downloading: false })
     setInLibrary(true)
     setSaving(false)
-  }, [detail, game])
+    onLibraryChange?.(game.id, true)
+  }, [detail, game, onLibraryChange])
 
   const handleRemoveFromLibrary = useCallback(async () => {
     if (!IS_ELECTRON) return
@@ -139,8 +142,10 @@ export default function GameDetail({ game, onClose }: GameDetailProps) {
     setSaving(true)
     await window.retrio.removeFromLibrary(game.id)
     setSaving(false)
+    onLibraryChange?.(game.id, false)
+    onRemoved?.(game.id)
     onClose()
-  }, [game.id, game.title, onClose, t])
+  }, [game.id, game.title, onClose, onLibraryChange, onRemoved, t])
 
   const handleDownload = useCallback(async () => {
     if (!IS_ELECTRON) return

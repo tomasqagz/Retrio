@@ -337,6 +337,14 @@ export default function Search() {
         <GameDetail
           game={selectedGame}
           onClose={handleDetailClose}
+          onLibraryChange={(id, inLib) => {
+            setLibraryMap((prev) => {
+              const next = new Map(prev)
+              if (inLib) next.set(id, { ...selectedGame, downloaded: false, downloading: false })
+              else next.delete(id)
+              return next
+            })
+          }}
         />
       )}
     </div>

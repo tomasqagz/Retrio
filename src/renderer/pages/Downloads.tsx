@@ -59,6 +59,11 @@ export default function Downloads() {
     loadGames()
     if (!IS_ELECTRON) return
 
+    // Sincronizar estado de descargas pausadas desde el proceso main
+    void window.retrio.getDownloadState().then(({ paused: pausedIds }) => {
+      if (pausedIds.length > 0) setPaused(new Set(pausedIds))
+    })
+
     const offProgress = window.retrio.onDownloadProgress((data) => {
       setProgressMap((prev) => ({ ...prev, [data.gameId]: data }))
       if (!knownIds.current.has(data.gameId)) {
@@ -107,7 +112,7 @@ export default function Downloads() {
     await window.retrio.cancelDownload(gameId)
     setPaused((prev) => { const n = new Set(prev); n.delete(gameId); return n })
     setProgressMap((prev) => { const n = { ...prev }; delete n[gameId]; return n })
-    setGames((prev) => prev.filter((g) => g.id !== gameId))
+    setGames((prev) => prev.map((g) => g.id === gameId ? { ...g, downloading: false, progress: 0 } : g))
   }
 
   async function handlePlay(game: Game) {

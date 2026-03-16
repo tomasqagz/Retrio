@@ -1,6 +1,6 @@
 {
   "name": "retrio",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "Launcher de juegos retro estilo Stremio",
   "main": "electron-main.cjs",
   "scripts": {

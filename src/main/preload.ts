@@ -21,6 +21,22 @@ const api: RetrioAPI = {
     ipcRenderer.invoke('archive:resume', { gameId }),
   cancelDownload: (gameId: number) =>
     ipcRenderer.invoke('archive:cancel', { gameId }),
+  getDownloadState: () =>
+    ipcRenderer.invoke('archive:get-state'),
+  quitApp: () =>
+    ipcRenderer.invoke('app:quit'),
+  hideWindow: () =>
+    ipcRenderer.invoke('app:hide'),
+  onConfirmQuit: (callback: () => void) => {
+    const handler = () => callback()
+    ipcRenderer.on('app:confirm-quit', handler)
+    return () => ipcRenderer.removeListener('app:confirm-quit', handler)
+  },
+  onCloseRequested: (callback: () => void) => {
+    const handler = () => callback()
+    ipcRenderer.on('app:close-requested', handler)
+    return () => ipcRenderer.removeListener('app:close-requested', handler)
+  },
   onDownloadProgress: (callback: (data: DownloadProgress) => void) => {
     const handler = (_e: unknown, data: DownloadProgress) => callback(data)
     ipcRenderer.on('archive:progress', handler)
