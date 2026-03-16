@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { app, BrowserWindow, shell, ipcMain, dialog, protocol } from 'electron'
+import { app, BrowserWindow, shell, ipcMain, dialog, protocol, Tray, Menu } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { searchGames, getPopularGames, getGameById, invalidateTokenCache } from './igdb'
@@ -11,13 +11,14 @@ import {
   removeFromLibrary,
   isInLibrary,
   dismissDownload,
+  resetDownload,
   setNoRom,
   addPlayTime,
   toggleFavorite,
   clearSearchCache,
   getSearchCacheInfo,
 } from './database'
-import { startArchiveDownload, pauseArchiveDownload, resumeArchiveDownload, cancelArchiveDownload, findRomsOnArchive } from './archiveorg'
+import { startArchiveDownload, pauseArchiveDownload, resumeArchiveDownload, cancelArchiveDownload, findRomsOnArchive, getActiveDownloadIds, getPausedDownloadIds } from './archiveorg'
 import { destroyClient } from './torrent'
 import { getEmulatorStatus, installEmulator, launchGame, deleteEmulator, openEmulator } from './emulator'
 import { cacheGameImages, localizeGameUrls, clearImageCache, gameImageDir } from './imageCache'
@@ -32,7 +33,14 @@ protocol.registerSchemesAsPrivileged([{
 
 const isDev = !!(process as NodeJS.Process & { defaultApp?: boolean }).defaultApp
 
+let tray: Tray | null = null
+let forceQuit = false
+
 function createWindow(): void {
+  const iconPath = isDev
+    ? path.join(process.cwd(), 'public/icon.ico')
+    : path.join(__dirname, '../../renderer/icon.ico')
+
   const win = new BrowserWindow({
     width: 1280,
     height: 800,
@@ -41,9 +49,7 @@ function createWindow(): void {
     backgroundColor: '#0f0f13',
     autoHideMenuBar: true,
     titleBarStyle: 'hiddenInset',
-    icon: isDev
-      ? path.join(process.cwd(), 'public/icon.ico')
-      : path.join(__dirname, '../../renderer/icon.ico'),
+    icon: iconPath,
     webPreferences: {
       preload: isDev
         ? path.join(process.cwd(), 'dist/preload/main/preload.js')
@@ -65,6 +71,44 @@ function createWindow(): void {
     shell.openExternal(url)
     return { action: 'deny' }
   })
+
+  // Tray icon
+  tray = new Tray(iconPath)
+  tray.setToolTip('Retrio')
+  tray.on('click', () => win.show())
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: 'Mostrar Retrio', click: () => win.show() },
+    { type: 'separator' },
+    {
+      label: 'Salir', click: () => {
+        const hasDownloads = getActiveDownloadIds().length > 0 || getPausedDownloadIds().length > 0
+        if (hasDownloads && !win.isDestroyed()) {
+          win.show()
+          win.webContents.send('app:confirm-quit')
+        } else {
+          forceQuit = true
+          app.quit()
+        }
+      }
+    },
+  ]))
+
+  // Si hay descargas activas o pausadas al cerrar, preguntar al usuario qué hacer
+  win.on('close', (e) => {
+    if (!forceQuit && (getActiveDownloadIds().length > 0 || getPausedDownloadIds().length > 0)) {
+      e.preventDefault()
+      win.webContents.send('app:close-requested')
+    }
+  })
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function safeSend(channel: string, data: unknown): void {
+  const win = BrowserWindow.getAllWindows()[0]
+  if (win && !win.isDestroyed() && !win.webContents.isDestroyed()) {
+    win.webContents.send(channel, data)
+  }
 }
 
 // ── IPC Handlers ──────────────────────────────────────────────────────────────
@@ -191,37 +235,42 @@ ipcMain.handle('archive:find-roms', async (_e, { game }: { game: Game }) => {
 })
 
 ipcMain.handle('archive:download', (_e, { game, romOption }: { game: Game; romOption?: RomOption }) => {
-  const win = BrowserWindow.getAllWindows()[0]
-
   void startArchiveDownload({
     game,
     romOption,
-    onProgress: (data) => {
-      win?.webContents.send('archive:progress', data)
-    },
-    onDone: (romPath: string) => {
-      win?.webContents.send('archive:done', { gameId: game.id, romPath })
-    },
-    onError: (err: Error) => {
-      win?.webContents.send('archive:error', { gameId: game.id, message: err.message })
-    },
+    onProgress: (data) => { safeSend('archive:progress', data) },
+    onDone: (romPath: string) => { safeSend('archive:done', { gameId: game.id, romPath }) },
+    onError: (err: Error) => { safeSend('archive:error', { gameId: game.id, message: err.message }) },
   })
 })
+
+ipcMain.handle('app:quit', () => {
+  forceQuit = true
+  app.quit()
+})
+
+ipcMain.handle('app:hide', () => {
+  BrowserWindow.getAllWindows()[0]?.hide()
+})
+
+ipcMain.handle('archive:get-state', () => ({
+  active: getActiveDownloadIds(),
+  paused: getPausedDownloadIds(),
+}))
 
 ipcMain.handle('archive:pause', (_e, { gameId }: { gameId: number }) => {
   return pauseArchiveDownload(gameId)
 })
 
 ipcMain.handle('archive:resume', (_e, { gameId }: { gameId: number }) => {
-  const win = BrowserWindow.getAllWindows()[0]
   void resumeArchiveDownload(gameId).catch((err: Error) => {
-    win?.webContents.send('archive:error', { gameId, message: err.message })
+    safeSend('archive:error', { gameId, message: err.message })
   })
 })
 
 ipcMain.handle('archive:cancel', (_e, { gameId }: { gameId: number }) => {
   cancelArchiveDownload(gameId)
-  removeFromLibrary(gameId)
+  resetDownload(gameId)
 })
 
 // ── Emulator IPC ──────────────────────────────────────────────────────────────
@@ -235,9 +284,8 @@ ipcMain.handle('emulator:open', (_e, { id }: { id: string }) => {
 })
 
 ipcMain.handle('emulator:install', async (_e, { name }: { name: string }) => {
-  const win = BrowserWindow.getAllWindows()[0]
   await installEmulator(name, (received, total) => {
-    win?.webContents.send('emulator:install-progress', { emulatorId: name, received, total })
+    safeSend('emulator:install-progress', { emulatorId: name, received, total })
   })
 })
 
@@ -336,6 +384,8 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
+  tray?.destroy()
+  tray = null
   destroyClient()
   if (process.platform !== 'darwin') app.quit()
 })

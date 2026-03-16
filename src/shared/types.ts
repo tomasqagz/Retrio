@@ -94,6 +94,11 @@ export interface RetrioAPI {
   pauseDownload: (gameId: number) => Promise<boolean>
   resumeDownload: (gameId: number) => Promise<void>
   cancelDownload: (gameId: number) => Promise<void>
+  getDownloadState: () => Promise<{ active: number[]; paused: number[] }>
+  quitApp: () => Promise<void>
+  hideWindow: () => Promise<void>
+  onConfirmQuit: (callback: () => void) => () => void
+  onCloseRequested: (callback: () => void) => () => void
   onDownloadProgress: (callback: (data: DownloadProgress) => void) => () => void
   onDownloadDone: (callback: (data: { gameId: number; romPath: string }) => void) => () => void
   onDownloadError: (callback: (data: { gameId: number; message: string }) => void) => () => void

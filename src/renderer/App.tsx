@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import Toaster, { toast } from './components/Toaster'
-import ConfirmDialog from './components/ConfirmDialog'
+import ConfirmDialog, { confirm } from './components/ConfirmDialog'
 import RomPickerModal from './components/RomPickerModal'
 import SplashScreen from './components/SplashScreen'
 import Onboarding from './components/Onboarding'
@@ -51,6 +51,31 @@ export default function App() {
       if (w && h) void window.retrio.setWindowSize(w, h)
     }
   }, [phase])
+
+  useEffect(() => {
+    if (!IS_ELECTRON) return
+    const offConfirmQuit = window.retrio.onConfirmQuit(async () => {
+      const ok = await confirm(t('quit.title'), {
+        subtitle: t('quit.subtitle'),
+        confirmLabel: t('quit.confirm'),
+        cancelLabel: t('quit.cancel'),
+        danger: false,
+      })
+      if (ok) void window.retrio.quitApp()
+    })
+    const offCloseRequested = window.retrio.onCloseRequested(async () => {
+      const result = await confirm(t('close.title'), {
+        subtitle: t('close.subtitle'),
+        confirmLabel: t('close.quit'),
+        cancelLabel: t('close.minimize'),
+        danger: true,
+      })
+      if (result === true) void window.retrio.quitApp()
+      else if (result === false) void window.retrio.hideWindow()
+      // null = X o click fuera → no hacer nada
+    })
+    return () => { offConfirmQuit(); offCloseRequested() }
+  }, [t])
 
   useEffect(() => {
     if (!IS_ELECTRON || phase !== 'ready') return

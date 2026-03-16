@@ -278,5 +278,17 @@
   "confirm": {
     "delete": "Eliminar",
     "cancel": "Cancelar"
+  },
+  "quit": {
+    "title": "¿Salir de Retrio?",
+    "subtitle": "Hay descargas en curso. Si salís ahora, se perderá el progreso y tendrás que reiniciarlas manualmente.",
+    "confirm": "Salir",
+    "cancel": "Cancelar"
+  },
+  "close": {
+    "title": "Hay descargas en curso",
+    "subtitle": "Si minimizás, las descargas siguen corriendo en la barra de iconos. Si cerrás, se perderá el progreso y tendrás que reiniciarlas manualmente.",
+    "minimize": "Minimizar a la barra",
+    "quit": "Cerrar Retrio"
   }
 }

@@ -478,6 +478,14 @@ export async function startArchiveDownload({
   await executeDownload(game, found, 0, { onProgress, onDone, onError })
 }
 
+export function getActiveDownloadIds(): number[] {
+  return [...activeRequests.keys()]
+}
+
+export function getPausedDownloadIds(): number[] {
+  return [...pausedDownloads.keys()]
+}
+
 export function pauseArchiveDownload(gameId: number): boolean {
   if (!activeRequests.has(gameId)) return false
   pausingNow.add(gameId)
